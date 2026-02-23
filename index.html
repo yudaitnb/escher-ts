@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>escher-ts Web Runner</title>
+    <script type="module" crossorigin src="./assets/index-CDTSeKtx.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-0DP4cT01.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <h1>escher-ts Web Runner</h1>
+        <p>JSON ベンチマークをブラウザ上で実行して、結果を可視化します。</p>
+      </header>
+
+      <section class="panel">
+        <h2>共通設定</h2>
+        <div class="grid grid-4">
+          <label>
+            <span>maxCost</span>
+            <input id="cfg-max-cost" type="number" min="1" value="24" />
+          </label>
+          <label>
+            <span>timeoutMs</span>
+            <input id="cfg-timeout-ms" type="number" min="1" value="10000" />
+          </label>
+          <label>
+            <span>searchSizeFactor</span>
+            <input id="cfg-search-size-factor" type="number" min="1" value="3" />
+          </label>
+          <label>
+            <span>maxReboots (TypedEscher)</span>
+            <input id="cfg-max-reboots" type="number" min="0" value="10" />
+          </label>
+        </div>
+        <div class="grid grid-4">
+          <label>
+            <span>strategy</span>
+            <select id="cfg-strategy">
+              <option value="then-first">then-first</option>
+              <option value="cond-first">cond-first</option>
+            </select>
+          </label>
+          <label>
+            <span>useReductionRules (AscendRec)</span>
+            <select id="cfg-use-reduction-rules">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </label>
+          <label>
+            <span>onlyForwardSearch (AscendRec)</span>
+            <select id="cfg-only-forward-search">
+              <option value="false">false</option>
+              <option value="true">true</option>
+            </select>
+          </label>
+          <div class="note">設定は単体実行 / suite 実行の両方に適用されます。</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>単体ベンチマーク実行</h2>
+        <div class="grid grid-3">
+          <label>
+            <span>Engine</span>
+            <select id="single-engine">
+              <option value="typed-escher">typed-escher</option>
+              <option value="ascendrec">ascendrec</option>
+            </select>
+          </label>
+          <label>
+            <span>Benchmark</span>
+            <select id="single-benchmark"></select>
+          </label>
+          <div class="actions">
+            <button id="run-single" type="button">Run Selected Benchmark</button>
+          </div>
+        </div>
+        <pre id="single-output" class="log"></pre>
+      </section>
+
+      <section class="panel">
+        <h2>Suite 実行 + グラフ</h2>
+        <div class="grid grid-3">
+          <label>
+            <span>Engine</span>
+            <select id="suite-engine">
+              <option value="typed-escher">typed-escher</option>
+              <option value="ascendrec">ascendrec</option>
+            </select>
+          </label>
+          <label>
+            <span>Suite</span>
+            <select id="suite-name">
+              <option value="pure">pure</option>
+              <option value="classes">classes</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button id="run-suite" type="button">Run Suite</button>
+          </div>
+        </div>
+        <pre id="suite-progress" class="log"></pre>
+        <div id="suite-table"></div>
+        <div id="suite-chart" class="chart"></div>
+      </section>
+    </main>
+
+  </body>
+</html>

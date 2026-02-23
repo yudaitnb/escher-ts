@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# coverage / test artifacts
+coverage/
+.nyc_output/
+vitest.config.ts.timestamp-*
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env
+.env
+.env.*
+!.env.example
+
+# caches
+.cache/
+.tmp/
+tmp/
+.eslintcache
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+
+# TypeScript / tooling
+*.d.ts.map
+
+Escher-Scala
+outputs
