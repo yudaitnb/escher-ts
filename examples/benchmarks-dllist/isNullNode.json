@@ -1,5 +1,5 @@
 {
-  "name": "thisRef",
+  "name": "isNullNode",
   "category": "classes",
   "classes": [
     {
@@ -13,7 +13,7 @@
   ],
   "exposeClassComponents": false,
   "signature": {
-    "returnType": "Ref[DLNode]",
+    "returnType": "Bool",
     "autoExpandClassSignature": {
       "className": "DLNode",
       "thisRefName": "thisRef",
@@ -34,10 +34,16 @@
       "nextHeap",
       "prevHeap"
     ],
-    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return 'error'; return thisRef;"
+    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return 'error'; return thisRef.ref === -1;"
   },
   "autoClassFieldComponents": true,
-  "components": [],
+  "components": [
+    {
+      "name": "isNull",
+      "kind": "libraryRef",
+      "ref": "isNull"
+    }
+  ],
   "examples": [
     [
       [
@@ -200,9 +206,7 @@
           }
         ]
       ],
-      {
-        "ref": -1
-      }
+      true
     ],
     [
       [
@@ -365,9 +369,7 @@
           }
         ]
       ],
-      {
-        "ref": 0
-      }
+      false
     ],
     [
       [
@@ -530,9 +532,7 @@
           }
         ]
       ],
-      {
-        "ref": 2
-      }
+      false
     ]
   ]
 }

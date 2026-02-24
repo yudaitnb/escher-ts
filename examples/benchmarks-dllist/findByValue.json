@@ -1,5 +1,5 @@
 {
-  "name": "tailPrevRef",
+  "name": "findByValue",
   "category": "classes",
   "classes": [
     {
@@ -22,7 +22,14 @@
         "value": "valueHeap",
         "next": "nextHeap",
         "prev": "prevHeap"
-      }
+      },
+      "additionalArgs": [
+        {
+          "name": "target",
+          "type": "Int",
+          "invariant": true
+        }
+      ]
     }
   },
   "oracle": {
@@ -32,9 +39,10 @@
       "nodeHeap",
       "valueHeap",
       "nextHeap",
-      "prevHeap"
+      "prevHeap",
+      "target"
     ],
-    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return { ref: -1 }; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; let idx = thisRef.ref; if (idx === -1) return { ref: -1 }; if (idx < -1 || idx >= nodeHeap.length) return { ref: -1 }; let steps = 0; const maxSteps = nodeHeap.length + 1; while (idx !== -1 && steps <= maxSteps) { if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const fields = node.object.fields; const valueRef = fields.value; const nextRef = fields.next; const prevRef = fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; if (nextRef.ref === -1) return prevRef; idx = nextRef.ref; steps += 1; } return { ref: -1 };"
+    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap) || !thisRef || typeof thisRef.ref !== 'number' || typeof target !== 'number') return { ref: -1 }; let cur = thisRef.ref; if (cur === -1) return { ref: -1 }; if (cur < -1 || cur >= nodeHeap.length) return { ref: -1 }; let guard = 0; const maxGuard = nodeHeap.length + 1; while (cur !== -1 && guard <= maxGuard) { if (cur < 0 || cur >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[cur]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; const v = valueHeap[valueRef.ref]; if (typeof v !== 'number') return { ref: -1 }; if (v === target) return { ref: cur }; cur = nextRef.ref; guard += 1; } return { ref: -1 };"
   },
   "autoClassFieldComponents": true,
   "components": [
@@ -42,6 +50,24 @@
       "name": "isNull",
       "kind": "libraryRef",
       "ref": "isNull"
+    },
+    {
+      "name": "isValueEqTarget",
+      "kind": "js",
+      "inputTypes": [
+        "Ref[DLNode]",
+        "List[DLNode]",
+        "List[Int]",
+        "Int"
+      ],
+      "returnType": "Bool",
+      "args": [
+        "thisRef",
+        "nodeHeap",
+        "valueHeap",
+        "target"
+      ],
+      "bodyJs": "if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number' || !Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || typeof target !== 'number') return 'error'; const i = thisRef.ref; if (i < 0 || i >= nodeHeap.length) return false; const node = nodeHeap[i]; if (!node || typeof node !== 'object' || !('object' in node)) return 'error'; const valueRef = node.object.fields.value; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return 'error'; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return 'error'; const v = valueHeap[valueRef.ref]; if (typeof v !== 'number') return 'error'; return v === target;"
     }
   ],
   "examples": [
@@ -106,126 +132,11 @@
               }
             }
           }
-        ]
+        ],
+        10
       ],
       {
-        "ref": -1
-      }
-    ],
-    [
-      [
-        {
-          "ref": 1
-        },
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          10,
-          20
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ]
-      ],
-      {
-        "ref": 1
+        "ref": 0
       }
     ],
     [
@@ -245,6 +156,74 @@
                   "ref": -1
                 },
                 "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          10
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        5
+      ],
+      {
+        "ref": -1
+      }
+    ],
+    [
+      [
+        {
+          "ref": 2
+        },
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
                   "ref": 1
                 }
               }
@@ -259,6 +238,22 @@
                 },
                 "next": {
                   "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
                 },
                 "prev": {
                   "ref": -1
@@ -269,7 +264,8 @@
         ],
         [
           10,
-          20
+          20,
+          30
         ],
         [
           {
@@ -277,7 +273,7 @@
               "className": "DLNode",
               "fields": {
                 "value": {
-                  "ref": 0
+                  "ref": 2
                 },
                 "next": {
                   "ref": -1
@@ -299,6 +295,22 @@
                   "ref": 0
                 },
                 "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
                   "ref": -1
                 }
               }
@@ -311,7 +323,7 @@
               "className": "DLNode",
               "fields": {
                 "value": {
-                  "ref": 0
+                  "ref": 2
                 },
                 "next": {
                   "ref": -1
@@ -333,12 +345,1221 @@
                   "ref": 0
                 },
                 "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
                   "ref": -1
                 }
               }
             }
           }
-        ]
+        ],
+        30
+      ],
+      {
+        "ref": 0
+      }
+    ],
+    [
+      [
+        {
+          "ref": 1
+        },
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          10,
+          20,
+          30
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        10
+      ],
+      {
+        "ref": -1
+      }
+    ],
+    [
+      [
+        {
+          "ref": 3
+        },
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          5,
+          8,
+          5,
+          9
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        5
+      ],
+      {
+        "ref": 3
+      }
+    ],
+    [
+      [
+        {
+          "ref": -1
+        },
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        3
+      ],
+      {
+        "ref": -1
+      }
+    ],
+    [
+      [
+        {
+          "ref": 2
+        },
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          10,
+          20,
+          30
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        20
+      ],
+      {
+        "ref": 1
+      }
+    ],
+    [
+      [
+        {
+          "ref": 4
+        },
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 4
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": 4
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 3
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          10,
+          20,
+          30,
+          40,
+          50
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 4
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": 4
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 3
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 4
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 3
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": 4
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 3
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        40
+      ],
+      {
+        "ref": 1
+      }
+    ],
+    [
+      [
+        {
+          "ref": 2
+        },
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          7,
+          5,
+          5
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 0
+                },
+                "prev": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          }
+        ],
+        5
       ],
       {
         "ref": 1
@@ -416,10 +1637,10 @@
           }
         ],
         [
-          10,
-          20,
-          30,
-          40
+          5,
+          1,
+          2,
+          5
         ],
         [
           {
@@ -552,444 +1773,17 @@
               }
             }
           }
-        ]
+        ],
+        5
       ],
       {
-        "ref": 1
+        "ref": 3
       }
     ],
     [
       [
         {
-          "ref": 1
-        },
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          10,
-          20,
-          30,
-          40
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ]
-      ],
-      {
-        "ref": 1
-      }
-    ],
-    [
-      [
-        {
-          "ref": -1
-        },
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          10,
-          20,
-          30,
-          40
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ]
-      ],
-      {
-        "ref": -1
-      }
-    ],
-    [
-      [
-        {
-          "ref": 7
+          "ref": 5
         },
         [
           {
@@ -1081,38 +1875,6 @@
                 },
                 "next": {
                   "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
                 },
                 "prev": {
                   "ref": -1
@@ -1127,9 +1889,7 @@
           30,
           40,
           50,
-          60,
-          70,
-          80
+          10
         ],
         [
           {
@@ -1221,38 +1981,6 @@
                 },
                 "next": {
                   "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
                 },
                 "prev": {
                   "ref": -1
@@ -1353,53 +2081,22 @@
                   "ref": 4
                 },
                 "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
                   "ref": -1
                 }
               }
             }
           }
-        ]
+        ],
+        10
       ],
       {
-        "ref": 1
+        "ref": 5
       }
     ],
     [
       [
         {
-          "ref": 4
+          "ref": 5
         },
         [
           {
@@ -1491,464 +2188,6 @@
                 },
                 "next": {
                   "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          10,
-          20,
-          30,
-          40,
-          50,
-          60,
-          70,
-          80
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": 4
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 4
-                },
-                "next": {
-                  "ref": 3
-                },
-                "prev": {
-                  "ref": 5
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 5
-                },
-                "next": {
-                  "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": 4
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 4
-                },
-                "next": {
-                  "ref": 3
-                },
-                "prev": {
-                  "ref": 5
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 5
-                },
-                "next": {
-                  "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ]
-      ],
-      {
-        "ref": 1
-      }
-    ],
-    [
-      [
-        {
-          "ref": 8
-        },
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": 4
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 4
-                },
-                "next": {
-                  "ref": 3
-                },
-                "prev": {
-                  "ref": 5
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 5
-                },
-                "next": {
-                  "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": 8
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 8
-                },
-                "next": {
-                  "ref": 7
                 },
                 "prev": {
                   "ref": -1
@@ -1962,11 +2201,8 @@
           2,
           3,
           4,
-          5,
-          6,
-          7,
-          8,
-          9
+          99,
+          7
         ],
         [
           {
@@ -2058,54 +2294,6 @@
                 },
                 "next": {
                   "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": 8
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 8
-                },
-                "next": {
-                  "ref": 7
                 },
                 "prev": {
                   "ref": -1
@@ -2206,522 +2394,16 @@
                   "ref": 4
                 },
                 "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": 8
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 8
-                },
-                "next": {
-                  "ref": 7
-                },
-                "prev": {
                   "ref": -1
                 }
               }
             }
           }
-        ]
+        ],
+        99
       ],
       {
-        "ref": 1
-      }
-    ],
-    [
-      [
-        {
-          "ref": 2
-        },
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": 4
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 4
-                },
-                "next": {
-                  "ref": 3
-                },
-                "prev": {
-                  "ref": 5
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 5
-                },
-                "next": {
-                  "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": 8
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 8
-                },
-                "next": {
-                  "ref": 7
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": 4
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 4
-                },
-                "next": {
-                  "ref": 3
-                },
-                "prev": {
-                  "ref": 5
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 5
-                },
-                "next": {
-                  "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": 8
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 8
-                },
-                "next": {
-                  "ref": 7
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ],
-        [
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 0
-                },
-                "next": {
-                  "ref": -1
-                },
-                "prev": {
-                  "ref": 1
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 1
-                },
-                "next": {
-                  "ref": 0
-                },
-                "prev": {
-                  "ref": 2
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 2
-                },
-                "next": {
-                  "ref": 1
-                },
-                "prev": {
-                  "ref": 3
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 3
-                },
-                "next": {
-                  "ref": 2
-                },
-                "prev": {
-                  "ref": 4
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 4
-                },
-                "next": {
-                  "ref": 3
-                },
-                "prev": {
-                  "ref": 5
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 5
-                },
-                "next": {
-                  "ref": 4
-                },
-                "prev": {
-                  "ref": 6
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 6
-                },
-                "next": {
-                  "ref": 5
-                },
-                "prev": {
-                  "ref": 7
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 7
-                },
-                "next": {
-                  "ref": 6
-                },
-                "prev": {
-                  "ref": 8
-                }
-              }
-            }
-          },
-          {
-            "object": {
-              "className": "DLNode",
-              "fields": {
-                "value": {
-                  "ref": 8
-                },
-                "next": {
-                  "ref": 7
-                },
-                "prev": {
-                  "ref": -1
-                }
-              }
-            }
-          }
-        ]
-      ],
-      {
-        "ref": 1
+        "ref": 4
       }
     ]
   ]

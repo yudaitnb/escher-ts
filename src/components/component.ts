@@ -1,6 +1,6 @@
 import { executeTerm, type ExecutableComponent } from "../types/term.js";
 import { type Type, shiftId } from "../types/type.js";
-import { greaterThan, type TermValue, valueError } from "../types/value.js";
+import { equalTermValue, greaterThan, type TermValue, valueError } from "../types/value.js";
 
 export type ArgList = readonly TermValue[];
 export type ArgListCompare = (a: ArgList, b: ArgList) => boolean;
@@ -186,6 +186,7 @@ export interface ComponentSignature {
 
 export interface RecursiveExecutionOptions {
   readonly enforceDecreasingMeasure?: boolean;
+  readonly invariantArgIndices?: readonly number[];
 }
 
 export const recursiveImpl = (
@@ -198,6 +199,7 @@ export const recursiveImpl = (
   const { name, argNames, inputTypes, returnType } = signature;
   const buffer = new Map<string, TermValue>();
   const enforceDecreasingMeasure = options.enforceDecreasingMeasure ?? true;
+  const invariantArgIndices = options.invariantArgIndices ?? [];
 
   const keyOf = (args: readonly TermValue[]): string => JSON.stringify(args);
 
@@ -208,6 +210,16 @@ export const recursiveImpl = (
   ): TermValue => {
     if (enforceDecreasingMeasure && lastArg !== null && !argListCompare(args, lastArg)) {
       return valueError;
+    }
+    if (lastArg !== null && invariantArgIndices.length > 0) {
+      for (const idx of invariantArgIndices) {
+        if (idx < 0 || idx >= args.length || idx >= lastArg.length) {
+          return valueError;
+        }
+        if (!equalTermValue(args[idx]!, lastArg[idx]!)) {
+          return valueError;
+        }
+      }
     }
 
     const key = keyOf(args);

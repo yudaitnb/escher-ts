@@ -11,17 +11,16 @@
     }
   ],
   "signature": {
-    "inputNames": [
-      "pointHeap",
-      "xHeap",
-      "yHeap"
-    ],
-    "inputTypes": [
-      "List[Point]",
-      "List[Int]",
-      "List[Int]"
-    ],
-    "returnType": "Int"
+    "returnType": "Int",
+    "autoExpandClassSignature": {
+      "className": "Point",
+      "includeThisRef": false,
+      "classHeapName": "pointHeap",
+      "fieldHeapNames": {
+        "x": "xHeap",
+        "y": "yHeap"
+      }
+    }
   },
   "oracle": {
     "kind": "js",

@@ -10,10 +10,17 @@
     "hasPrev",
     "isHead",
     "isTail",
-    "nextValueRef",
+    "nextValue",
     "tailRef",
-    "headValueRef",
-    "tailValueRef",
-    "tailPrevRef"
+    "headValue",
+    "tailValue",
+    "tailPrevRef",
+    "nthRef",
+    "dllLength",
+    "dllSum",
+    "dllMax",
+    "findByValue",
+    "isNonDecreasing",
+    "penultimateRef"
   ]
 }

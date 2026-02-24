@@ -12,7 +12,7 @@ import {
   type UserLiteral,
 } from "./user-friendly.js";
 import { type ArgList } from "./component.js";
-import { equalTermValue, type TermValue, valueError, valueObject } from "../types/value.js";
+import { equalTermValue, type TermValue, valueBool, valueError, valueObject, valueRef } from "../types/value.js";
 import { equalsType, type Type, tyBool, tyInt, tyList, tyObject, tyPair, tyRef, tyTree } from "../types/type.js";
 import {
   getBenchmarkPresetComponents,
@@ -46,16 +46,42 @@ export interface JsonClassSpec {
   readonly methods?: readonly JsonClassMethodSpec[];
 }
 
+export interface JsonAutoExpandAdditionalArgSpec {
+  readonly name: string;
+  readonly type: string;
+  readonly invariant?: boolean;
+}
+
+export interface JsonAutoExpandClassSignatureSpec {
+  readonly className?: string;
+  readonly includeThisRef?: boolean;
+  readonly thisRefName?: string;
+  readonly classHeapName?: string;
+  readonly includeRefFieldHeaps?: boolean;
+  readonly fieldHeapFields?: readonly string[];
+  readonly fieldHeapNames?: Readonly<Record<string, string>>;
+  readonly additionalArgs?: readonly JsonAutoExpandAdditionalArgSpec[];
+  readonly recursiveInvariantArgNames?: readonly string[];
+}
+
 export interface JsonSynthesisSpec {
   readonly name?: string;
   readonly category?: string;
   readonly classes?: readonly JsonClassSpec[];
   readonly exposeClassComponents?: boolean;
+  readonly autoClassFieldComponents?: boolean;
+  // Backward compatibility: prefer signature.fixedClassRecursivePattern.
+  readonly fixedClassRecursivePattern?: boolean;
+  // Backward compatibility: prefer signature.recursiveInvariantArgNames.
+  readonly recursiveInvariantArgNames?: readonly string[];
   readonly componentsPreset?: string;
   readonly signature?: {
-    readonly inputNames: readonly string[];
-    readonly inputTypes: readonly string[];
+    readonly inputNames?: readonly string[];
+    readonly inputTypes?: readonly string[];
     readonly returnType: string;
+    readonly fixedClassRecursivePattern?: boolean;
+    readonly recursiveInvariantArgNames?: readonly string[];
+    readonly autoExpandClassSignature?: JsonAutoExpandClassSignatureSpec;
   };
   readonly oracle?:
     | {
@@ -201,7 +227,14 @@ const ensureSpecShape = (value: unknown): JsonSynthesisSpec => {
   const classes = Array.isArray(record.classes) ? (record.classes as JsonClassSpec[]) : undefined;
   const exposeClassComponents =
     typeof record.exposeClassComponents === "boolean" ? record.exposeClassComponents : undefined;
+  const autoClassFieldComponents =
+    typeof record.autoClassFieldComponents === "boolean" ? record.autoClassFieldComponents : undefined;
   const componentsPreset = typeof record.componentsPreset === "string" ? record.componentsPreset : undefined;
+  const fixedClassRecursivePattern =
+    typeof record.fixedClassRecursivePattern === "boolean" ? record.fixedClassRecursivePattern : undefined;
+  const recursiveInvariantArgNames = Array.isArray(record.recursiveInvariantArgNames)
+    ? (record.recursiveInvariantArgNames as string[])
+    : undefined;
   const signatureRaw =
     typeof record.signature === "object" && record.signature !== null
       ? (record.signature as Record<string, unknown>)
@@ -210,9 +243,19 @@ const ensureSpecShape = (value: unknown): JsonSynthesisSpec => {
     signatureRaw === undefined
       ? undefined
       : {
-          inputNames: signatureRaw.inputNames as readonly string[],
-          inputTypes: signatureRaw.inputTypes as readonly string[],
+          ...(Array.isArray(signatureRaw.inputNames) ? { inputNames: signatureRaw.inputNames as readonly string[] } : {}),
+          ...(Array.isArray(signatureRaw.inputTypes) ? { inputTypes: signatureRaw.inputTypes as readonly string[] } : {}),
           returnType: signatureRaw.returnType as string,
+          ...(typeof signatureRaw.fixedClassRecursivePattern === "boolean"
+            ? { fixedClassRecursivePattern: signatureRaw.fixedClassRecursivePattern as boolean }
+            : {}),
+          ...(Array.isArray(signatureRaw.recursiveInvariantArgNames)
+            ? { recursiveInvariantArgNames: signatureRaw.recursiveInvariantArgNames as string[] }
+            : {}),
+          ...(typeof signatureRaw.autoExpandClassSignature === "object" &&
+          signatureRaw.autoExpandClassSignature !== null
+            ? { autoExpandClassSignature: signatureRaw.autoExpandClassSignature as JsonAutoExpandClassSignatureSpec }
+            : {}),
         };
   const oracleRaw =
     typeof record.oracle === "object" && record.oracle !== null ? (record.oracle as Record<string, unknown>) : undefined;
@@ -244,6 +287,9 @@ const ensureSpecShape = (value: unknown): JsonSynthesisSpec => {
     ...(category !== undefined ? { category } : {}),
     ...(classes !== undefined ? { classes } : {}),
     ...(exposeClassComponents !== undefined ? { exposeClassComponents } : {}),
+    ...(autoClassFieldComponents !== undefined ? { autoClassFieldComponents } : {}),
+    ...(fixedClassRecursivePattern !== undefined ? { fixedClassRecursivePattern } : {}),
+    ...(recursiveInvariantArgNames !== undefined ? { recursiveInvariantArgNames } : {}),
     ...(componentsPreset !== undefined ? { componentsPreset } : {}),
     ...(signature !== undefined ? { signature } : {}),
     ...(oracle !== undefined ? { oracle } : {}),
@@ -471,6 +517,178 @@ const buildClassTypeResolver = (classes: readonly JsonClassSpec[] | undefined) =
   return (name: string): Type | null => map.get(name) ?? null;
 };
 
+const classNameFromObjectType = (type: Type): string | null => {
+  if (type.kind !== "apply" || type.params.length !== 0) {
+    return null;
+  }
+  const ctorName = type.constructor.name;
+  if (!ctorName.startsWith("Object<") || !ctorName.endsWith(">")) {
+    return null;
+  }
+  return ctorName.slice("Object<".length, -1);
+};
+
+const refTargetType = (type: Type): Type | null => {
+  if (type.kind !== "apply" || type.constructor.name !== "Ref" || type.params.length !== 1) {
+    return null;
+  }
+  return type.params[0] ?? null;
+};
+
+const listElemType = (type: Type): Type | null => {
+  if (type.kind !== "apply" || type.constructor.name !== "List" || type.params.length !== 1) {
+    return null;
+  }
+  return type.params[0] ?? null;
+};
+
+const capitalize = (text: string): string =>
+  text.length === 0 ? text : text[0]!.toUpperCase() + text.slice(1);
+
+const buildAutoClassFieldComponentDefs = (
+  spec: JsonSynthesisSpec,
+  signature: {
+    readonly inputNames: readonly string[];
+    readonly inputTypes: readonly Type[];
+    readonly returnType: Type;
+  },
+  functionName: string,
+  existingNames: ReadonlySet<string>,
+): readonly ComponentDefinition[] => {
+  if (spec.autoClassFieldComponents !== true || spec.classes === undefined || spec.classes.length === 0) {
+    return [];
+  }
+
+  const receiverIndex = signature.inputTypes.findIndex((inputType) => {
+    const target = refTargetType(inputType);
+    return target !== null && classNameFromObjectType(target) !== null;
+  });
+  if (receiverIndex < 0) {
+    return [];
+  }
+
+  const receiverTarget = refTargetType(signature.inputTypes[receiverIndex]!);
+  const receiverClassName = receiverTarget === null ? null : classNameFromObjectType(receiverTarget);
+  if (receiverClassName === null) {
+    return [];
+  }
+
+  const classSpec = spec.classes.find((cls) => cls.name === receiverClassName);
+  if (classSpec === undefined) {
+    return [];
+  }
+
+  const objectHeapIndex = signature.inputTypes.findIndex((inputType, index) => {
+    if (index === receiverIndex) {
+      return false;
+    }
+    const elem = listElemType(inputType);
+    return elem !== null && classNameFromObjectType(elem) === receiverClassName;
+  });
+  if (objectHeapIndex < 0) {
+    return [];
+  }
+
+  const resolveClassType = buildClassTypeResolver(spec.classes);
+  const inputNameToIndex = new Map(signature.inputNames.map((name, index) => [name, index] as const));
+  const receiverType = signature.inputTypes[receiverIndex]!;
+  const objectHeapType = signature.inputTypes[objectHeapIndex]!;
+  const defs: ComponentDefinition[] = [];
+  const emittedNames = new Set<string>();
+  const hasName = (name: string): boolean => existingNames.has(name) || emittedNames.has(name);
+
+  const emit = (definition: ComponentDefinition): void => {
+    if (hasName(definition.name)) {
+      return;
+    }
+    emittedNames.add(definition.name);
+    defs.push(definition);
+  };
+
+  for (const [fieldName, rawFieldType] of Object.entries(classSpec.fields ?? {})) {
+    const fieldType = parseTypeSpecWithResolver(
+      asString(rawFieldType, `classes[${receiverClassName}].fields.${fieldName}`),
+      resolveClassType,
+    );
+    const fieldRefTarget = refTargetType(fieldType);
+    const fieldTargetClassName = fieldRefTarget === null ? null : classNameFromObjectType(fieldRefTarget);
+    const fieldHeapIndex = inputNameToIndex.get(`${fieldName}Heap`);
+    const fieldHeapType = fieldHeapIndex === undefined ? null : signature.inputTypes[fieldHeapIndex]!;
+    const componentInputTypes =
+      fieldHeapType === null ? [receiverType, objectHeapType] : [receiverType, objectHeapType, fieldHeapType];
+    const invalidValue = fieldRefTarget === null ? valueError : valueRef(-1);
+
+    const accessField = (args: readonly TermValue[]): TermValue => {
+      const thisArg = args[0];
+      const heapArg = args[1];
+      if (thisArg === undefined || thisArg.tag !== "ref" || heapArg === undefined || heapArg.tag !== "list") {
+        return invalidValue;
+      }
+      const idx = thisArg.value;
+      if (idx < 0 || idx >= heapArg.elems.length) {
+        return invalidValue;
+      }
+      const node = heapArg.elems[idx];
+      if (node === undefined || node.tag !== "object" || node.className !== receiverClassName) {
+        return invalidValue;
+      }
+      const fieldValue = node.fields[fieldName];
+      if (fieldValue === undefined) {
+        return invalidValue;
+      }
+
+      if (fieldRefTarget === null) {
+        return fieldValue;
+      }
+      if (fieldValue.tag !== "ref") {
+        return invalidValue;
+      }
+
+      if (fieldHeapIndex !== undefined) {
+        const fieldHeap = args[2];
+        if (fieldHeap === undefined || fieldHeap.tag !== "list") {
+          return invalidValue;
+        }
+        if (fieldValue.value === -1) {
+          return fieldTargetClassName === null ? invalidValue : fieldValue;
+        }
+        if (fieldValue.value < 0 || fieldValue.value >= fieldHeap.elems.length) {
+          return invalidValue;
+        }
+      } else if (fieldTargetClassName === null && fieldValue.value < 0) {
+        return invalidValue;
+      }
+
+      return fieldValue;
+    };
+
+    emit({
+      name: `${fieldName}Of`,
+      inputTypes: componentInputTypes,
+      returnType: fieldType,
+      impl: accessField,
+    });
+
+    const boolAccessorName = `has${capitalize(fieldName)}`;
+    if (boolAccessorName !== functionName) {
+      emit({
+        name: boolAccessorName,
+        inputTypes: componentInputTypes,
+        returnType: tyBool,
+        impl: (args) => {
+          const out = accessField(args);
+          if (fieldRefTarget !== null) {
+            return out.tag === "ref" && out.value !== -1 ? valueBool(true) : valueBool(false);
+          }
+          return out.tag === "error" ? valueBool(false) : valueBool(true);
+        },
+      });
+    }
+  }
+
+  return defs;
+};
+
 const lowerClassSpecsToComponents = (classes: readonly JsonClassSpec[] | undefined): readonly ComponentImpl[] => {
   if (classes === undefined || classes.length === 0) {
     return [];
@@ -643,6 +861,7 @@ export interface PreparedJsonSynthesisJob extends PreparedJsonSpec {
   readonly inputTypes: readonly Type[];
   readonly returnType: Type;
   readonly oracle: (args: ArgList) => TermValue;
+  readonly recursiveInvariantArgIndices: readonly number[];
 }
 
 const inferSignatureFromExamples = (
@@ -675,29 +894,256 @@ const inferSignatureFromExamples = (
   return { inputNames, inputTypes, returnType };
 };
 
+interface ResolvedSignature {
+  readonly inputNames: readonly string[];
+  readonly inputTypes: readonly Type[];
+  readonly returnType: Type;
+  readonly autoExpandedRecursiveInvariantArgNames?: readonly string[];
+}
+
+const lowerCamel = (text: string): string =>
+  text.length === 0 ? text : text[0]!.toLowerCase() + text.slice(1);
+
+const resolveSignatureFromAutoExpansion = (
+  spec: JsonSynthesisSpec,
+  resolveClassType: ((name: string) => Type | null) | undefined,
+): ResolvedSignature => {
+  if (spec.signature === undefined || spec.signature.autoExpandClassSignature === undefined) {
+    throw new Error("Internal error: auto-expansion requested without signature.autoExpandClassSignature");
+  }
+  const expansion = spec.signature.autoExpandClassSignature;
+  const returnType = parseTypeSpecWithResolver(
+    asString(spec.signature.returnType, "signature.returnType"),
+    resolveClassType,
+  );
+
+  if (spec.classes === undefined || spec.classes.length === 0) {
+    throw new Error("signature.autoExpandClassSignature requires at least one class definition");
+  }
+  const className =
+    expansion.className !== undefined
+      ? asString(expansion.className, "signature.autoExpandClassSignature.className")
+      : spec.classes.length === 1
+        ? spec.classes[0]!.name
+        : (() => {
+            throw new Error(
+              "signature.autoExpandClassSignature.className is required when multiple classes are defined",
+            );
+          })();
+  const classSpec = spec.classes.find((cls) => cls.name === className);
+  if (classSpec === undefined) {
+    throw new Error(`Unknown class for signature.autoExpandClassSignature: ${className}`);
+  }
+
+  const includeThisRef = expansion.includeThisRef ?? true;
+  const thisRefName = includeThisRef
+    ? asString(expansion.thisRefName ?? "thisRef", "signature.autoExpandClassSignature.thisRefName")
+    : null;
+  const classHeapName = asString(
+    expansion.classHeapName ?? `${lowerCamel(className)}Heap`,
+    "signature.autoExpandClassSignature.classHeapName",
+  );
+  const includeRefFieldHeaps = expansion.includeRefFieldHeaps ?? true;
+  const selectedFields =
+    expansion.fieldHeapFields === undefined
+      ? null
+      : new Set(
+          expansion.fieldHeapFields.map((fieldName, idx) =>
+            asString(fieldName, `signature.autoExpandClassSignature.fieldHeapFields[${idx}]`),
+          ),
+        );
+  if (selectedFields !== null) {
+    const knownFields = new Set(Object.keys(classSpec.fields));
+    for (const fieldName of selectedFields) {
+      if (!knownFields.has(fieldName)) {
+        throw new Error(`Unknown field in signature.autoExpandClassSignature.fieldHeapFields: ${fieldName}`);
+      }
+    }
+  }
+  const fieldHeapNameByField = new Map<string, string>();
+  for (const [fieldName, heapName] of Object.entries(expansion.fieldHeapNames ?? {})) {
+    if (!(fieldName in classSpec.fields)) {
+      throw new Error(`Unknown field in signature.autoExpandClassSignature.fieldHeapNames: ${fieldName}`);
+    }
+    fieldHeapNameByField.set(
+      asString(fieldName, "signature.autoExpandClassSignature.fieldHeapNames field"),
+      asString(heapName, `signature.autoExpandClassSignature.fieldHeapNames.${fieldName}`),
+    );
+  }
+
+  const usedArgNames = new Set<string>();
+  const inputNames: string[] = [];
+  const inputTypes: Type[] = [];
+  const defaultInvariantArgNames: string[] = [];
+  const pushArg = (argName: string, argType: Type): void => {
+    if (usedArgNames.has(argName)) {
+      throw new Error(`Duplicate signature argument name after auto expansion: ${argName}`);
+    }
+    usedArgNames.add(argName);
+    inputNames.push(argName);
+    inputTypes.push(argType);
+  };
+
+  if (thisRefName !== null) {
+    pushArg(thisRefName, tyRef(tyObject(className)));
+  }
+  pushArg(classHeapName, tyList(tyObject(className)));
+  defaultInvariantArgNames.push(classHeapName);
+
+  for (const [fieldName, fieldTypeRaw] of Object.entries(classSpec.fields)) {
+    if (includeRefFieldHeaps !== true) {
+      continue;
+    }
+    if (selectedFields !== null && !selectedFields.has(fieldName)) {
+      continue;
+    }
+    const fieldType = parseTypeSpecWithResolver(
+      asString(fieldTypeRaw, `classes.${className}.fields.${fieldName}`),
+      resolveClassType,
+    );
+    const fieldTargetType = refTargetType(fieldType);
+    if (fieldTargetType === null) {
+      continue;
+    }
+    const heapName = fieldHeapNameByField.get(fieldName) ?? `${fieldName}Heap`;
+    pushArg(heapName, tyList(fieldTargetType));
+    defaultInvariantArgNames.push(heapName);
+  }
+
+  for (const [idx, arg] of (expansion.additionalArgs ?? []).entries()) {
+    const argName = asString(arg.name, `signature.autoExpandClassSignature.additionalArgs[${idx}].name`);
+    const argTypeText = asString(arg.type, `signature.autoExpandClassSignature.additionalArgs[${idx}].type`);
+    const argType = parseTypeSpecWithResolver(argTypeText, resolveClassType);
+    pushArg(argName, argType);
+    if (arg.invariant === true) {
+      defaultInvariantArgNames.push(argName);
+    }
+  }
+
+  const autoExpandedRecursiveInvariantArgNames =
+    expansion.recursiveInvariantArgNames === undefined
+      ? defaultInvariantArgNames
+      : expansion.recursiveInvariantArgNames.map((name, idx) =>
+          asString(name, `signature.autoExpandClassSignature.recursiveInvariantArgNames[${idx}]`),
+        );
+
+  return {
+    inputNames,
+    inputTypes,
+    returnType,
+    autoExpandedRecursiveInvariantArgNames,
+  };
+};
+
+const resolveSignature = (
+  spec: JsonSynthesisSpec,
+  resolveClassType: ((name: string) => Type | null) | undefined,
+): ResolvedSignature => {
+  if (spec.signature === undefined) {
+    return inferSignatureFromExamples(spec.examples);
+  }
+
+  const hasExplicitInputNames = Array.isArray(spec.signature.inputNames);
+  const hasExplicitInputTypes = Array.isArray(spec.signature.inputTypes);
+  const hasAutoExpansion = spec.signature.autoExpandClassSignature !== undefined;
+
+  if (hasAutoExpansion && (hasExplicitInputNames || hasExplicitInputTypes)) {
+    throw new Error(
+      "signature.autoExpandClassSignature cannot be combined with signature.inputNames/inputTypes",
+    );
+  }
+
+  if (hasAutoExpansion) {
+    return resolveSignatureFromAutoExpansion(spec, resolveClassType);
+  }
+
+  if (!hasExplicitInputNames || !hasExplicitInputTypes) {
+    throw new Error(
+      "signature requires either inputNames/inputTypes or autoExpandClassSignature",
+    );
+  }
+  if (spec.signature.inputNames!.length !== spec.signature.inputTypes!.length) {
+    throw new Error("signature.inputNames and signature.inputTypes must have the same length");
+  }
+  const inputNames = spec.signature.inputNames!.map((name, idx) =>
+    asString(name, `signature.inputNames[${idx}]`),
+  );
+  const inputTypes = spec.signature.inputTypes!.map((typeName, idx) =>
+    parseTypeSpecWithResolver(asString(typeName, `signature.inputTypes[${idx}]`), resolveClassType),
+  );
+  const returnType = parseTypeSpecWithResolver(
+    asString(spec.signature.returnType, "signature.returnType"),
+    resolveClassType,
+  );
+  return { inputNames, inputTypes, returnType };
+};
+
+const inferClassInvariantArgNames = (
+  spec: JsonSynthesisSpec,
+  signature: {
+    readonly inputNames: readonly string[];
+    readonly inputTypes: readonly Type[];
+  },
+  resolveClassType: ((name: string) => Type | null) | undefined,
+): readonly string[] => {
+  if (spec.classes === undefined || spec.classes.length === 0) {
+    return [];
+  }
+
+  const classListElemTypes = spec.classes.map((cls) => tyObject(cls.name));
+  const fieldHeapElemTypes: Type[] = [];
+  for (const cls of spec.classes) {
+    for (const [fieldName, fieldTypeRaw] of Object.entries(cls.fields)) {
+      const fieldType = parseTypeSpecWithResolver(
+        asString(fieldTypeRaw, `classes.${cls.name}.fields.${fieldName}`),
+        resolveClassType,
+      );
+      const target = refTargetType(fieldType);
+      if (target !== null) {
+        fieldHeapElemTypes.push(target);
+      }
+    }
+  }
+
+  const inferred = signature.inputNames.filter((name, index) => {
+    if (!name.endsWith("Heap")) {
+      return false;
+    }
+    const inputType = signature.inputTypes[index];
+    if (inputType === undefined) {
+      return false;
+    }
+    const elem = listElemType(inputType);
+    if (elem === null) {
+      return false;
+    }
+    if (classListElemTypes.some((ty) => equalsType(elem, ty))) {
+      return true;
+    }
+    if (fieldHeapElemTypes.some((ty) => equalsType(elem, ty))) {
+      return true;
+    }
+    return false;
+  });
+
+  return inferred;
+};
+
 export const prepareJsonSynthesisJob = (spec: JsonSynthesisSpec): PreparedJsonSynthesisJob => {
   const prepared = prepareJsonSynthesisSpec(spec);
+  const functionName = prepared.name ?? "synthesized";
   const resolveClassType = buildClassTypeResolver(spec.classes);
-  const signature =
-    spec.signature === undefined
-      ? inferSignatureFromExamples(spec.examples)
-      : (() => {
-          if (!Array.isArray(spec.signature.inputNames) || !Array.isArray(spec.signature.inputTypes)) {
-            throw new Error("signature.inputNames and signature.inputTypes must be arrays");
-          }
-          if (spec.signature.inputNames.length !== spec.signature.inputTypes.length) {
-            throw new Error("signature.inputNames and signature.inputTypes must have the same length");
-          }
-          const inputNames = spec.signature.inputNames.map((n, i) => asString(n, `signature.inputNames[${i}]`));
-          const inputTypes = spec.signature.inputTypes.map((t, i) =>
-            parseTypeSpecWithResolver(asString(t, `signature.inputTypes[${i}]`), resolveClassType),
-          );
-          const returnType = parseTypeSpecWithResolver(
-            asString(spec.signature.returnType, "signature.returnType"),
-            resolveClassType,
-          );
-          return { inputNames, inputTypes, returnType };
-        })();
+  const signature = resolveSignature(spec, resolveClassType);
+
+  const autoClassFieldDefs = buildAutoClassFieldComponentDefs(
+    spec,
+    signature,
+    functionName,
+    new Set(prepared.env.keys()),
+  );
+  const autoClassFieldComponents = autoClassFieldDefs.length === 0 ? [] : defineComponents(autoClassFieldDefs);
+  const components = autoClassFieldComponents.length === 0 ? prepared.components : [...prepared.components, ...autoClassFieldComponents];
+  const env = autoClassFieldComponents.length === 0 ? prepared.env : createComponentEnv(components);
 
   const oracle =
     spec.oracle?.kind === "table"
@@ -718,12 +1164,55 @@ export const prepareJsonSynthesisJob = (spec: JsonSynthesisSpec): PreparedJsonSy
           })()
       : createOracleFromExamples(prepared.examples);
 
+  const recursiveInvariantArgIndices = (() => {
+    const recursiveInvariantArgNames =
+      spec.signature?.recursiveInvariantArgNames ??
+      signature.autoExpandedRecursiveInvariantArgNames ??
+      spec.recursiveInvariantArgNames;
+    if (recursiveInvariantArgNames !== undefined) {
+      const indexByName = new Map(signature.inputNames.map((name, idx) => [name, idx] as const));
+      const requested = new Set<number>();
+      for (const [idx, name] of recursiveInvariantArgNames.entries()) {
+        const normalized = asString(name, `recursiveInvariantArgNames[${idx}]`);
+        const found = indexByName.get(normalized);
+        if (found === undefined) {
+          throw new Error(`Unknown recursiveInvariantArgNames entry: ${normalized}`);
+        }
+        requested.add(found);
+      }
+      return signature.inputNames
+        .map((_, idx) => idx)
+        .filter((idx) => requested.has(idx));
+    }
+    const inferred = inferClassInvariantArgNames(spec, signature, resolveClassType);
+    if (inferred.length > 0) {
+      const requested = new Set(inferred);
+      return signature.inputNames
+        .map((_, idx) => idx)
+        .filter((idx) => requested.has(signature.inputNames[idx]!));
+    }
+    const fixedClassRecursivePattern = spec.signature?.fixedClassRecursivePattern ?? spec.fixedClassRecursivePattern;
+    if (fixedClassRecursivePattern === true) {
+      const thisRefIndex = signature.inputNames.indexOf("thisRef");
+      if (thisRefIndex < 0) {
+        throw new Error("fixedClassRecursivePattern=true requires signature.inputNames to include 'thisRef'");
+      }
+      return signature.inputNames
+        .map((_, idx) => idx)
+        .filter((idx) => idx > thisRefIndex);
+    }
+    return [];
+  })();
+
   return {
     ...prepared,
-    functionName: prepared.name ?? "synthesized",
+    components,
+    env,
+    functionName,
     inputNames: signature.inputNames,
     inputTypes: signature.inputTypes,
     returnType: signature.returnType,
     oracle,
+    recursiveInvariantArgIndices,
   };
 };

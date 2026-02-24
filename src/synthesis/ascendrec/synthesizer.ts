@@ -131,6 +131,17 @@ export class AscendRecSynthesizer {
     const compSet = [...envExtended, recursiveComp];
 
     const argDecrease = (arg: ArgList, exampleId: number): boolean => config.argListCompare(arg, inputs[exampleId]!);
+    const recursiveInvariantOk = (arg: ArgList, exampleId: number): boolean => {
+      for (const idx of config.recursiveInvariantArgIndices) {
+        if (idx < 0 || idx >= arg.length || idx >= inputs[exampleId]!.length) {
+          return false;
+        }
+        if (!equalTermValue(arg[idx]!, inputs[exampleId]![idx]!)) {
+          return false;
+        }
+      }
+      return true;
+    };
 
     state.openNextLevel(1);
     inputTypes.forEach((type, argIndex) => {
@@ -224,6 +235,9 @@ export class AscendRecSynthesizer {
                   if (config.enforceDecreasingMeasure && !argDecrease(args, exId)) {
                     return valueError;
                   }
+                  if (!recursiveInvariantOk(args, exId)) {
+                    return valueError;
+                  }
                   return impl.execute(args);
                 });
 
@@ -297,6 +311,7 @@ export class AscendRecSynthesizer {
     const validateBody = (body: Term): boolean => {
       const impl = recursiveImpl(signature, envComps, config.argListCompare, body, {
         enforceDecreasingMeasure: config.enforceDecreasingMeasure,
+        invariantArgIndices: config.recursiveInvariantArgIndices,
       });
       return examples.every(([args, expected]) => equalTermValue(impl.executeEfficient(args), expected));
     };
@@ -351,6 +366,7 @@ export class AscendRecSynthesizer {
           envComps,
           config.argListCompare,
           config.enforceDecreasingMeasure,
+          config.recursiveInvariantArgIndices,
           inputs,
           termsWithKnownVV,
           nonRecBoolTerms,

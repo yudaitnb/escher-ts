@@ -12,15 +12,11 @@ export const benchmarkReportToCsv = (report: BenchmarkRunReport): string => {
 };
 
 export const benchmarkReportToSvg = (report: BenchmarkRunReport): string => {
-  const width = 1100;
-  const height = 520;
-  const marginLeft = 70;
+  const height = 560;
+  const marginLeft = 96;
   const marginRight = 30;
   const marginTop = 50;
-  const marginBottom = 110;
-
-  const chartWidth = width - marginLeft - marginRight;
-  const chartHeight = height - marginTop - marginBottom;
+  const marginBottom = 210;
 
   const categoryOrder = ["lists", "integers", "trees", "classes"] as const;
   const groups = categoryOrder
@@ -42,6 +38,10 @@ export const benchmarkReportToSvg = (report: BenchmarkRunReport): string => {
   const maxElapsed = Math.max(1, ...report.cases.map((c) => c.elapsedMs));
   const categoryGapUnits = 0.9;
   const unitCount = report.cases.length + Math.max(0, groups.length - 1) * categoryGapUnits;
+  const minBarArea = 38;
+  const width = Math.max(1100, Math.ceil(marginLeft + marginRight + unitCount * minBarArea));
+  const chartWidth = width - marginLeft - marginRight;
+  const chartHeight = height - marginTop - marginBottom;
   const barArea = chartWidth / Math.max(1, unitCount);
   const barWidth = Math.max(8, Math.min(48, barArea * 0.7));
 
@@ -63,7 +63,7 @@ export const benchmarkReportToSvg = (report: BenchmarkRunReport): string => {
       const lx = marginLeft + cursor * barArea + barArea / 2;
       const labelY = marginTop + chartHeight + 18;
       const name = esc(row.name);
-      labels.push(`<text x="${lx.toFixed(2)}" y="${labelY.toFixed(2)}" text-anchor="middle" font-size="11" transform="rotate(35 ${lx.toFixed(2)} ${labelY.toFixed(2)})">${name}</text>`);
+      labels.push(`<text x="${lx.toFixed(2)}" y="${labelY.toFixed(2)}" text-anchor="middle" font-size="10" transform="rotate(55 ${lx.toFixed(2)} ${labelY.toFixed(2)})">${name}</text>`);
 
       const vy = marginTop + chartHeight - h - 6;
       valueLabels.push(`<text x="${lx.toFixed(2)}" y="${Math.max(14, vy).toFixed(2)}" text-anchor="middle" font-size="10">${row.elapsedMs}ms</text>`);
@@ -71,7 +71,8 @@ export const benchmarkReportToSvg = (report: BenchmarkRunReport): string => {
     }
     const groupEnd = cursor;
     const gx = marginLeft + ((groupStart + groupEnd) / 2) * barArea;
-    groupLabels.push(`<text x="${gx.toFixed(2)}" y="${(marginTop - 8).toFixed(2)}" text-anchor="middle" font-size="12" font-weight="600">${categoryTitle(group.category)}</text>`);
+    const groupLabelY = marginTop + chartHeight + 128;
+    groupLabels.push(`<text x="${gx.toFixed(2)}" y="${groupLabelY.toFixed(2)}" text-anchor="middle" font-size="12" font-weight="600">${categoryTitle(group.category)}</text>`);
     if (groupIdx < groups.length - 1) {
       const sx = marginLeft + cursor * barArea + (categoryGapUnits * barArea) / 2;
       separators.push(`<line x1="${sx.toFixed(2)}" y1="${marginTop}" x2="${sx.toFixed(2)}" y2="${(marginTop + chartHeight).toFixed(2)}" stroke="#d1d5db" stroke-dasharray="4 4" />`);
@@ -85,7 +86,7 @@ export const benchmarkReportToSvg = (report: BenchmarkRunReport): string => {
       const v = Math.round(maxElapsed * p);
       return `
 <line x1="${marginLeft}" y1="${y.toFixed(2)}" x2="${width - marginRight}" y2="${y.toFixed(2)}" stroke="#e5e7eb" />
-<text x="${marginLeft - 8}" y="${(y + 4).toFixed(2)}" text-anchor="end" font-size="11">${v}</text>`;
+<text x="${marginLeft - 12}" y="${(y + 11).toFixed(2)}" text-anchor="end" font-size="10">${v}</text>`;
     })
     .join("\n");
   const engineLabel = report.engine === "typed-escher" ? "TypedEscher" : "AscendRec";

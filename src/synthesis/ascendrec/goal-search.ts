@@ -57,6 +57,7 @@ export class AscendRecGoalSearch {
     envComps: ReadonlyMap<string, ComponentImpl>,
     private readonly argListCompare: ArgListCompare,
     private readonly enforceDecreasingMeasure: boolean,
+    private readonly recursiveInvariantArgIndices: readonly number[],
     private readonly inputVector: readonly ArgList[],
     private readonly termsWithKnownVV: readonly (readonly (readonly [ValueVector, Term])[])[],
     private readonly nonRecBoolTerms: readonly (readonly (readonly [ValueVector, Term])[])[],
@@ -125,6 +126,7 @@ export class AscendRecGoalSearch {
       }
       const impl = recursiveImpl(this.signature, this.envCompMap, this.argListCompare, assembledBody, {
         enforceDecreasingMeasure: this.enforceDecreasingMeasure,
+        invariantArgIndices: this.recursiveInvariantArgIndices,
       });
       this.recursiveImplCache.set(k, impl);
       return impl;
@@ -293,6 +295,7 @@ export class AscendRecGoalSearch {
             if (partialImpl === undefined) {
               partialImpl = recursiveImpl(this.signature, this.compMapWithHole, this.argListCompare, partialBody, {
                 enforceDecreasingMeasure: this.enforceDecreasingMeasure,
+                invariantArgIndices: this.recursiveInvariantArgIndices,
               });
               this.partialRecursiveImplCache.set(partialKey, partialImpl);
             }

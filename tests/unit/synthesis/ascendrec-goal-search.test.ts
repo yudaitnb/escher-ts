@@ -20,6 +20,7 @@ describe("ascendrec goal search", () => {
       new Map(),
       anyArgSmaller,
       true,
+      [],
       [[valueInt(1)], [valueInt(2)]],
       [
         [[[valueInt(1), valueInt(2)], varTerm("x")]],
@@ -43,6 +44,7 @@ describe("ascendrec goal search", () => {
       new Map(),
       anyArgSmaller,
       true,
+      [],
       [[valueInt(1)], [valueInt(2)]],
       [[]],
       [[]],
@@ -70,6 +72,7 @@ describe("ascendrec goal search", () => {
       new Map(),
       anyArgSmaller,
       true,
+      [],
       [[valueInt(1)], [valueInt(2)]],
       [
         [
@@ -103,6 +106,7 @@ describe("ascendrec goal search", () => {
       new Map(),
       anyArgSmaller,
       true,
+      [],
       [[valueInt(1)], [valueInt(2)]],
       [
         [
@@ -136,6 +140,7 @@ describe("ascendrec goal search", () => {
       new Map(),
       anyArgSmaller,
       true,
+      [],
       [[valueInt(1)], [valueInt(2)]],
       [[]],
       [
@@ -164,6 +169,7 @@ describe("ascendrec goal search", () => {
       env,
       anyArgSmaller,
       true,
+      [],
       [[valueInt(0)]],
       [[]],
       [[]],

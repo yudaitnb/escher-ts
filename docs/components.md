@@ -75,7 +75,82 @@ const merged = mergeComponentEnvs(fullEnv, reversePreset);
 
 `exposeClassComponents: false` を指定すると自動生成を止め、型情報だけを使えます。
 
-## 6. 実装ファイルの責務
+### `autoClassFieldComponents`（ヒープ参照スタイル向け）
+
+`autoClassFieldComponents: true` を指定すると、以下の形のシグネチャに対して
+クラスの `Ref[...]` フィールドアクセス用コンポーネントを自動生成します。
+
+- 先頭引数: `Ref[Class]`（例: `thisRef`）
+- どこかの引数: `List[Class]`（例: `nodeHeap`）
+- フィールド別ヒープ: `nextHeap`, `prevHeap`, `valueHeap` など（任意、あれば検証に使用）
+
+`DLNode { value: Ref[Int], next: Ref[DLNode], prev: Ref[DLNode] }` の場合、例えば以下が生成されます。
+
+- `nextOf`, `prevOf`, `valueOf`
+- `hasNext`, `hasPrev`, `hasValue`（`has<Field>` は全フィールド対象。関数名と同名の場合は衝突回避で生成スキップ）
+
+これにより `benchmarks-dllist` のような JSON で、`nextOf/prevOf/valueOf` の
+重複した手書き JS コンポーネント定義を省略できます。
+
+## 6. 再帰呼び出しで「不変引数」を固定する
+
+クラス/ヒープエンコードでは、`*Heap` 引数（クラス本体ヒープ + フィールドヒープ）は
+クラス定義から自動的に不変引数として推論されます。
+通常、`recursiveInvariantArgNames` を手で書く必要はありません。
+
+必要な場合のみ、`signature` の中で `recursiveInvariantArgNames` を明示指定できます。
+
+```json
+{
+  "signature": {
+    "inputNames": ["thisRef", "nodeHeap", "valueHeap", "target"],
+    "inputTypes": ["Ref[DLNode]", "List[DLNode]", "List[Int]", "Int"],
+    "returnType": "Ref[DLNode]",
+    "recursiveInvariantArgNames": ["nodeHeap", "valueHeap"]
+  }
+}
+```
+
+この指定があると、再帰呼び出しでは上記引数が常に同値であることを強制します。
+
+また、`signature.fixedClassRecursivePattern: true` を使うと、
+`thisRef` より後ろの引数を一括で不変引数として扱います。
+
+### `signature.autoExpandClassSignature`（シグネチャ自動展開）
+
+クラス/ヒープ系ベンチマークで `inputNames` / `inputTypes` の重複定義を減らしたい場合は、
+`signature.autoExpandClassSignature` を使ってシグネチャを生成できます。
+
+```json
+{
+  "signature": {
+    "returnType": "Ref[DLNode]",
+    "autoExpandClassSignature": {
+      "className": "DLNode",
+      "thisRefName": "thisRef",
+      "classHeapName": "nodeHeap",
+      "fieldHeapNames": {
+        "value": "valueHeap",
+        "next": "nextHeap",
+        "prev": "prevHeap"
+      },
+      "additionalArgs": [{ "name": "n", "type": "Int" }]
+    }
+  }
+}
+```
+
+この設定で以下が自動生成されます。
+
+- `thisRef: Ref[DLNode]`（`includeThisRef: false` で省略可）
+- `nodeHeap: List[DLNode]`
+- `valueHeap/nextHeap/prevHeap`（`Ref[...]` フィールドから自動）
+- `additionalArgs`
+
+また、`recursiveInvariantArgNames` を省略した場合は、
+`classHeap` とフィールドヒープ（および `invariant: true` の追加引数）が既定で不変引数になります。
+
+## 7. 実装ファイルの責務
 
 - `src/components/component.ts`
   - `ComponentImpl` / `defineComponent` / `createComponentEnv`

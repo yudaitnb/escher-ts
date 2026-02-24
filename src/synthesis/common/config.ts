@@ -8,6 +8,7 @@ export interface BaseSynthesisConfig {
   timeoutMs: number | null;
   argListCompare: ArgListCompare;
   enforceDecreasingMeasure: boolean;
+  recursiveInvariantArgIndices: readonly number[];
   searchSizeFactor: number;
   goalSearchStrategy: GoalSearchStrategy;
 }
@@ -18,6 +19,7 @@ export const defaultBaseSynthesisConfig: BaseSynthesisConfig = {
   timeoutMs: 1000,
   argListCompare: anyArgSmaller,
   enforceDecreasingMeasure: true,
+  recursiveInvariantArgIndices: [],
   searchSizeFactor: 3,
   goalSearchStrategy: "then-first",
 };

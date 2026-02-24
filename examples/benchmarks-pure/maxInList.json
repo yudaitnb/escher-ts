@@ -14,7 +14,22 @@
     "kind": "componentRef",
     "name": "maxInList"
   },
-  "components": [],
+  "components": [
+    {
+      "name": "max2",
+      "kind": "js",
+      "inputTypes": [
+        "Int",
+        "Int"
+      ],
+      "returnType": "Int",
+      "args": [
+        "a",
+        "b"
+      ],
+      "bodyJs": "if (typeof a !== 'number' || typeof b !== 'number') return 'error'; return a >= b ? a : b;"
+    }
+  ],
   "examples": [
     [
       [
@@ -103,6 +118,67 @@
         ]
       ],
       100
+    ],
+    [
+      [
+        [
+          5,
+          4,
+          100
+        ]
+      ],
+      100
+    ],
+    [
+      [
+        [
+          -1,
+          -2,
+          -3
+        ]
+      ],
+      -1
+    ],
+    [
+      [
+        [
+          1,
+          5,
+          4,
+          100
+        ]
+      ],
+      100
+    ],
+    [
+      [
+        [
+          9,
+          8
+        ]
+      ],
+      9
+    ],
+    [
+      [
+        [
+          8,
+          9
+        ]
+      ],
+      9
+    ],
+    [
+      [
+        [
+          -10,
+          -5,
+          -7,
+          -1,
+          -20
+        ]
+      ],
+      -1
     ]
   ],
   "category": "lists"

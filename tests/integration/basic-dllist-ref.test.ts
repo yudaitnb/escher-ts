@@ -7,9 +7,9 @@ import { AscendRecSynthesizer } from "../../src/synthesis/ascendrec/synthesizer.
 import { TypedEscherSynthesizer } from "../../src/synthesis/escher/synthesizer.js";
 
 const basicCases = [
-  "dllist-is-null.json",
-  "dllist-this-ref.json",
-  "dllist-next-ref.json",
+  "isNullNode.json",
+  "thisRef.json",
+  "nextRef.json",
 ] as const;
 
 const loadJob = (fileName: string) => {

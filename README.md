@@ -84,6 +84,42 @@ Default outputs:
 - `outputs/<suite>-ascendrec-runtime.csv`
 - `outputs/<suite>-ascendrec-programs.md`
 
+## Engine Configuration Reference
+
+Both CLI and Web UI expose the same core search parameters.
+
+- `maxCost`
+  - Global level bound for synthesis loops (`for level = 1..maxCost`) in both TypedEscher and AscendRec.
+  - It limits how deep/costly candidate programs can be enumerated and searched.
+  - Too small: search stops before a valid program can appear. Too large: runtime grows quickly.
+- `timeoutMs`
+  - Single per-task wall-clock deadline (`createDeadline(timeoutMs)`), checked throughout synthesis.
+  - For TypedEscher, the same deadline is shared across reboot rounds; reboot does not reset timeout.
+  - `null` means no timeout in core config (CLI/Web usually pass a finite value).
+- `searchSizeFactor`
+  - Budget multiplier for conditional goal search: budget = `searchSizeFactor * level`.
+  - Used by TypedEscher batch goal search and AscendRec goal search.
+  - In AscendRec with `onlyForwardSearch=true`, goal search is skipped, so this has little/no effect.
+- `maxReboots` (TypedEscher)
+  - TypedEscher-only reboot cap for counterexample-driven retries.
+  - Checked as `reboots > maxReboots`; with `maxReboots=0`, only the initial attempt runs (no retry round).
+  - Not used by AscendRec.
+- `strategy` (`then-first` / `cond-first`)
+  - Conditional decomposition order inside goal search.
+  - TypedEscher: selects `searchThenFirst` vs `searchCondFirst` in batch goal search.
+  - AscendRec: passed into `AscendRecGoalSearch` and affects split/if-search order.
+  - Same solution space in principle, different runtime profile in practice.
+  - Practical note: on `examples/benchmarks-dllist/findByValue.json`,
+    TypedEscher may fail quickly with `then-first` under the default budget, while
+    `cond-first` succeeds; AscendRec succeeds with either strategy in current implementation.
+    If this case fails in TypedEscher, try `--strategy cond-first` first.
+- `useReductionRules` (AscendRec)
+  - `true`: uses component reduction rules (`isReducible` + optional custom rules) to prune equivalent/useless terms.
+  - `false`: disables these reductions, usually expanding the search space significantly.
+- `onlyForwardSearch` (AscendRec)
+  - `true`: skips backward/goal-search phase and relies on forward exact hits from enumerated terms.
+  - `false`: enables full forward + goal-search behavior (normally recommended).
+
 ## Directory Layout
 
 - `src/`: synthesizer implementation
@@ -135,6 +171,20 @@ More details:
 
 - Component definitions: `docs/components.md`
 - Test strategy: `tests/README.md`
+
+## Recursive Task Assumption (Decreasing Measure)
+
+For recursive synthesis, this project enforces a decreasing-measure check by default
+(`enforceDecreasingMeasure=true`).
+
+The default comparator is `anyArgSmaller`, which means a recursive call is accepted only if:
+
+- every argument is non-increasing compared to the caller, and
+- at least one argument is strictly smaller.
+
+So for tasks that should synthesize recursion, examples and encodings must make this decrease visible.
+For `Ref` values, the order uses absolute value; e.g. `2 -> 1 -> 0 -> -1` is decreasing, while
+`0 -> 1 -> 2` is not.
 
 ## Adding a New Task
 

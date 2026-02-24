@@ -112,6 +112,17 @@ export class TypedEscherSynthesizer {
     });
 
     const argDecrease = (arg: ArgList, exampleId: number): boolean => config.argListCompare(arg, inputs[exampleId]!);
+    const recursiveInvariantOk = (arg: ArgList, exampleId: number): boolean => {
+      for (const idx of config.recursiveInvariantArgIndices) {
+        if (idx < 0 || idx >= arg.length || idx >= inputs[exampleId]!.length) {
+          return false;
+        }
+        if (!equalTermValue(arg[idx]!, inputs[exampleId]![idx]!)) {
+          return false;
+        }
+      }
+      return true;
+    };
 
     const interestingSignature = isInterestingSignature(goalReturnType, inputTypes);
 
@@ -201,6 +212,9 @@ export class TypedEscherSynthesizer {
                 if (compName === name && config.enforceDecreasingMeasure && !argDecrease(callArgs, exId)) {
                   return valueError;
                 }
+                if (compName === name && !recursiveInvariantOk(callArgs, exId)) {
+                  return valueError;
+                }
                 return impl.executeEfficient(callArgs);
               });
 
@@ -222,6 +236,7 @@ export class TypedEscherSynthesizer {
       }
       const impl = recursiveImpl(signature, envComps, config.argListCompare, program.body, {
         enforceDecreasingMeasure: config.enforceDecreasingMeasure,
+        invariantArgIndices: config.recursiveInvariantArgIndices,
       });
 
       const passed: [ArgList, TermValue][] = [];

@@ -13,21 +13,17 @@
   ],
   "exposeClassComponents": false,
   "signature": {
-    "inputNames": [
-      "thisRef",
-      "nodeHeap",
-      "valueHeap",
-      "nextHeap",
-      "prevHeap"
-    ],
-    "inputTypes": [
-      "Ref[DLNode]",
-      "List[DLNode]",
-      "List[Int]",
-      "List[DLNode]",
-      "List[DLNode]"
-    ],
-    "returnType": "Ref[DLNode]"
+    "returnType": "Ref[DLNode]",
+    "autoExpandClassSignature": {
+      "className": "DLNode",
+      "thisRefName": "thisRef",
+      "classHeapName": "nodeHeap",
+      "fieldHeapNames": {
+        "value": "valueHeap",
+        "next": "nextHeap",
+        "prev": "prevHeap"
+      }
+    }
   },
   "oracle": {
     "kind": "js",
@@ -40,27 +36,8 @@
     ],
     "body": "if (!Array.isArray(nodeHeap)) return { ref: -1 }; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; let idx = thisRef.ref; if (idx === -1) return { ref: -1 }; if (idx < -1 || idx >= nodeHeap.length) return { ref: -1 }; let steps = 0; const maxSteps = nodeHeap.length + 1; while (idx !== -1 && steps <= maxSteps) { const n = nodeHeap[idx]; if (!n || typeof n !== 'object' || !('object' in n)) return { ref: -1 }; const prev = n.object.fields.prev; if (!prev || typeof prev !== 'object' || typeof prev.ref !== 'number') return { ref: -1 }; if (prev.ref === -1) return { ref: idx }; if (prev.ref < -1 || prev.ref >= nodeHeap.length) return { ref: -1 }; idx = prev.ref; steps += 1; } return { ref: -1 };"
   },
+  "autoClassFieldComponents": true,
   "components": [
-    {
-      "name": "prevOf",
-      "kind": "js",
-      "inputTypes": [
-        "Ref[DLNode]",
-        "List[DLNode]",
-        "List[Int]",
-        "List[DLNode]",
-        "List[DLNode]"
-      ],
-      "returnType": "Ref[DLNode]",
-      "args": [
-        "thisRef",
-        "nodeHeap",
-        "valueHeap",
-        "nextHeap",
-        "prevHeap"
-      ],
-      "bodyJs": "if (!Array.isArray(nodeHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const n = nodeHeap[idx]; if (!n || typeof n !== 'object' || !('object' in n)) return { ref: -1 }; const prev = n.object.fields.prev; return prev && typeof prev === 'object' && typeof prev.ref === 'number' ? prev : { ref: -1 };"
-    },
     {
       "name": "isNull",
       "kind": "libraryRef",

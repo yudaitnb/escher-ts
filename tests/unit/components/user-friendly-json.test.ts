@@ -7,8 +7,8 @@ import {
   prepareJsonSynthesisJob,
   prepareJsonSynthesisSpec,
 } from "../../../src/components/user-friendly-json.js";
-import { tyInt, tyList, tyObject, tyPair, tyRef } from "../../../src/types/type.js";
-import { valueError, valueInt, valueList, valueObject } from "../../../src/types/value.js";
+import { tyBool, tyInt, tyList, tyObject, tyPair, tyRef } from "../../../src/types/type.js";
+import { valueBool, valueError, valueInt, valueList, valueObject, valueRef } from "../../../src/types/value.js";
 
 describe("user-friendly JSON spec", () => {
   it("parses and prepares calculator-like spec", () => {
@@ -233,5 +233,192 @@ describe("user-friendly JSON spec", () => {
     expect(job.returnType).toEqual(tyRef(tyObject("DLNode")));
     const [firstInput, firstOutput] = job.examples[0]!;
     expect(job.oracle(firstInput)).toEqual(firstOutput);
+  });
+
+  it("auto-generates class field access components from class + signature", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "dummy",
+      "classes": [
+        {
+          "name": "DLNode",
+          "fields": {
+            "value": "Ref[Int]",
+            "next": "Ref[DLNode]",
+            "prev": "Ref[DLNode]"
+          }
+        }
+      ],
+      "exposeClassComponents": false,
+      "autoClassFieldComponents": true,
+      "signature": {
+        "inputNames": ["thisRef", "nodeHeap", "valueHeap", "nextHeap", "prevHeap"],
+        "inputTypes": ["Ref[DLNode]", "List[DLNode]", "List[Int]", "List[DLNode]", "List[DLNode]"],
+        "returnType": "Ref[DLNode]"
+      },
+      "components": [],
+      "examples": [[
+        [
+          { "ref": 0 },
+          [
+            { "object": { "className": "DLNode", "fields": { "value": { "ref": 0 }, "next": { "ref": 1 }, "prev": { "ref": -1 } } } },
+            { "object": { "className": "DLNode", "fields": { "value": { "ref": 1 }, "next": { "ref": -1 }, "prev": { "ref": 0 } } } }
+          ],
+          [10, 20],
+          [
+            { "object": { "className": "DLNode", "fields": { "value": { "ref": 0 }, "next": { "ref": 1 }, "prev": { "ref": -1 } } } },
+            { "object": { "className": "DLNode", "fields": { "value": { "ref": 1 }, "next": { "ref": -1 }, "prev": { "ref": 0 } } } }
+          ],
+          [
+            { "object": { "className": "DLNode", "fields": { "value": { "ref": 0 }, "next": { "ref": 1 }, "prev": { "ref": -1 } } } },
+            { "object": { "className": "DLNode", "fields": { "value": { "ref": 1 }, "next": { "ref": -1 }, "prev": { "ref": 0 } } } }
+          ]
+        ],
+        { "ref": 1 }
+      ]]
+    }`);
+
+    const job = prepareJsonSynthesisJob(spec);
+    expect(job.env.get("nextOf")).toBeDefined();
+    expect(job.env.get("prevOf")).toBeDefined();
+    expect(job.env.get("valueOf")).toBeDefined();
+    expect(job.env.get("valueRefOf")).toBeUndefined();
+    expect(job.env.get("hasNext")).toBeDefined();
+    expect(job.env.get("hasPrev")).toBeDefined();
+    expect(job.env.get("hasValue")).toBeDefined();
+    expect(job.env.get("nextOf")?.inputTypes.length).toBe(3);
+    expect(job.env.get("prevOf")?.inputTypes.length).toBe(3);
+    expect(job.env.get("valueOf")?.inputTypes.length).toBe(3);
+    expect(job.env.get("hasNext")?.inputTypes.length).toBe(3);
+    expect(job.env.get("hasPrev")?.inputTypes.length).toBe(3);
+    expect(job.env.get("hasValue")?.inputTypes.length).toBe(3);
+
+    const [args] = job.examples[0]!;
+    expect(job.env.get("nextOf")?.executeEfficient(args)).toEqual(valueRef(1));
+    expect(job.env.get("prevOf")?.executeEfficient(args)).toEqual(valueRef(-1));
+    expect(job.env.get("valueOf")?.executeEfficient(args)).toEqual(valueRef(0));
+    expect(job.env.get("hasNext")?.executeEfficient(args)).toEqual(valueBool(true));
+    expect(job.env.get("hasPrev")?.executeEfficient(args)).toEqual(valueBool(false));
+    expect(job.env.get("hasValue")?.executeEfficient(args)).toEqual(valueBool(true));
+
+    const nullThisArgs = [valueRef(-1), args[1]!, args[2]!, args[3]!, args[4]!];
+    expect(job.env.get("nextOf")?.executeEfficient(nullThisArgs)).toEqual(valueRef(-1));
+  });
+
+  it("auto-expands class signatures and default invariant args", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "autoSig",
+      "classes": [
+        {
+          "name": "DLNode",
+          "fields": {
+            "value": "Ref[Int]",
+            "next": "Ref[DLNode]",
+            "prev": "Ref[DLNode]"
+          }
+        }
+      ],
+      "exposeClassComponents": false,
+      "signature": {
+        "returnType": "Bool",
+        "autoExpandClassSignature": {
+          "className": "DLNode",
+          "thisRefName": "thisRef",
+          "classHeapName": "nodeHeap",
+          "fieldHeapNames": {
+            "value": "valueHeap",
+            "next": "nextHeap",
+            "prev": "prevHeap"
+          },
+          "additionalArgs": [
+            { "name": "target", "type": "Int" }
+          ]
+        }
+      },
+      "components": [],
+      "examples": [
+        [[{"ref": -1}, [], [], [], [], 0], false]
+      ]
+    }`);
+
+    const job = prepareJsonSynthesisJob(spec);
+    expect(job.inputNames).toEqual(["thisRef", "nodeHeap", "valueHeap", "nextHeap", "prevHeap", "target"]);
+    expect(job.inputTypes).toEqual([
+      tyRef(tyObject("DLNode")),
+      tyList(tyObject("DLNode")),
+      tyList(tyInt),
+      tyList(tyObject("DLNode")),
+      tyList(tyObject("DLNode")),
+      tyInt,
+    ]);
+    expect(job.returnType).toEqual(tyBool);
+    expect(job.recursiveInvariantArgIndices).toEqual([1, 2, 3, 4]);
+  });
+
+  it("emits nextOf with minimal arity when no nextHeap is in signature", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "findFirstLike",
+      "classes": [
+        {
+          "name": "DLNode",
+          "fields": {
+            "value": "Ref[Int]",
+            "next": "Ref[DLNode]",
+            "prev": "Ref[DLNode]"
+          }
+        }
+      ],
+      "exposeClassComponents": false,
+      "autoClassFieldComponents": true,
+      "signature": {
+        "returnType": "Ref[DLNode]",
+        "autoExpandClassSignature": {
+          "className": "DLNode",
+          "thisRefName": "thisRef",
+          "classHeapName": "nodeHeap",
+          "fieldHeapFields": ["value"],
+          "fieldHeapNames": { "value": "valueHeap" },
+          "additionalArgs": [{ "name": "target", "type": "Int" }]
+        }
+      },
+      "components": [],
+      "examples": [
+        [[{"ref": -1}, [], [], 0], {"ref": -1}]
+      ]
+    }`);
+
+    const job = prepareJsonSynthesisJob(spec);
+    expect(job.inputNames).toEqual(["thisRef", "nodeHeap", "valueHeap", "target"]);
+    expect(job.env.get("nextOf")?.inputTypes.length).toBe(2);
+    expect(job.env.get("prevOf")?.inputTypes.length).toBe(2);
+    expect(job.env.get("valueOf")?.inputTypes.length).toBe(3);
+  });
+
+  it("infers class heap invariants without recursiveInvariantArgNames", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "inferInvariant",
+      "classes": [
+        {
+          "name": "DLNode",
+          "fields": {
+            "value": "Ref[Int]",
+            "next": "Ref[DLNode]",
+            "prev": "Ref[DLNode]"
+          }
+        }
+      ],
+      "exposeClassComponents": false,
+      "signature": {
+        "inputNames": ["thisRef", "nodeHeap", "valueHeap", "nextHeap", "prevHeap", "target"],
+        "inputTypes": ["Ref[DLNode]", "List[DLNode]", "List[Int]", "List[DLNode]", "List[DLNode]", "Int"],
+        "returnType": "Ref[DLNode]"
+      },
+      "components": [],
+      "examples": [
+        [[{"ref": -1}, [], [], [], [], 0], {"ref": -1}]
+      ]
+    }`);
+
+    const job = prepareJsonSynthesisJob(spec);
+    expect(job.recursiveInvariantArgIndices).toEqual([1, 2, 3, 4]);
   });
 });
