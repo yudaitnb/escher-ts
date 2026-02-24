@@ -4,14 +4,16 @@ import type { BenchmarkEngine, BenchmarkRunHooks, BenchmarkRunReport } from "../
 import { formatBenchmarkProgramPairs, formatBenchmarkReport } from "../benchmarks/report-formatters.js";
 import { benchmarkReportToCsv, benchmarkReportToSvg } from "../benchmarks/report-chart.js";
 import {
-  classBenchmarks,
-  classExamplesBenchmarks,
+  dllistBenchmarks,
+  dllistExamplesBenchmarks,
+  pointBenchmarks,
+  pointExamplesBenchmarks,
   pureBenchmarks,
   pureExamplesBenchmarks,
   standardListBenchmarks,
 } from "../benchmarks/typed-escher-benchmarks.js";
 
-export type BenchmarkSuite = "standard" | "pure" | "classes";
+export type BenchmarkSuite = "standard" | "pure" | "dllist" | "points";
 export type GoalSearchStrategy = "then-first" | "cond-first";
 export type SharedCliParsedValues = {
   svg?: string;
@@ -38,13 +40,16 @@ export const parseSuite = (value: string | undefined): BenchmarkSuite => {
   if (value === "pure") {
     return "pure";
   }
-  if (value === "classes") {
-    return "classes";
+  if (value === "dllist" || value === "classes") {
+    return "dllist";
+  }
+  if (value === "points") {
+    return "points";
   }
   if (value === "standard") {
     return "standard";
   }
-  throw new Error(`Unknown suite '${value}'. Expected one of: standard, pure, classes`);
+  throw new Error(`Unknown suite '${value}'. Expected one of: standard, pure, dllist, points`);
 };
 
 export const normalizeCliArgs = (argv: readonly string[]): string[] => (argv[0] === "--" ? argv.slice(1) : [...argv]);
@@ -65,11 +70,13 @@ export const selectBenchmarks = (suite: BenchmarkSuite, namesRaw: string | undef
   const pool =
     suite === "pure"
       ? pureBenchmarks
-      : suite === "classes"
-        ? classExamplesBenchmarks
+      : suite === "dllist"
+        ? dllistExamplesBenchmarks
+        : suite === "points"
+          ? pointExamplesBenchmarks
         : standardListBenchmarks;
   if (namesRaw === undefined || namesRaw.trim() === "") {
-    return suite === "classes" ? classBenchmarks : pool;
+    return suite === "dllist" ? dllistBenchmarks : suite === "points" ? pointBenchmarks : pool;
   }
 
   const names = new Set(namesRaw.split(",").map((s) => s.trim()).filter((s) => s.length > 0));

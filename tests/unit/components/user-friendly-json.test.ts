@@ -220,7 +220,7 @@ describe("user-friendly JSON spec", () => {
   });
 
   it("prepares the basic DLList next task with Ref-typed links", () => {
-    const jsonPath = resolve(process.cwd(), "examples/benchmarks-classes/dllist-next-ref.json");
+    const jsonPath = resolve(process.cwd(), "examples/benchmarks-dllist/nextRef.json");
     const spec = parseJsonSynthesisSpec(readFileSync(jsonPath, "utf8"));
     const job = prepareJsonSynthesisJob(spec);
     expect(job.inputTypes).toEqual([

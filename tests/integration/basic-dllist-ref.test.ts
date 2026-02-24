@@ -13,7 +13,7 @@ const basicCases = [
 ] as const;
 
 const loadJob = (fileName: string) => {
-  const path = resolve(process.cwd(), "examples/benchmarks-classes", fileName);
+  const path = resolve(process.cwd(), "examples/benchmarks-dllist", fileName);
   const spec = parseJsonSynthesisSpec(readFileSync(path, "utf8"));
   return prepareJsonSynthesisJob(spec);
 };

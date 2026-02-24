@@ -1,5 +1,6 @@
 import pureSuiteRaw from "../../examples/benchmark-suites/pure.json";
-import classesSuiteRaw from "../../examples/benchmark-suites/classes.json";
+import dllistSuiteRaw from "../../examples/benchmark-suites/dllist.json";
+import pointsSuiteRaw from "../../examples/benchmark-suites/points.json";
 import { prepareJsonSynthesisJob, parseJsonSynthesisSpec } from "../../src/components/user-friendly-json.ts";
 import { showTerm } from "../../src/types/term.ts";
 import { showType } from "../../src/types/type.ts";
@@ -9,7 +10,8 @@ import { benchmarkReportToSvg } from "../../src/benchmarks/report-chart.ts";
 
 const jsonModules = {
   pure: import.meta.glob("../../examples/benchmarks-pure/*.json", { eager: true }),
-  classes: import.meta.glob("../../examples/benchmarks-classes/*.json", { eager: true }),
+  dllist: import.meta.glob("../../examples/benchmarks-dllist/*.json", { eager: true }),
+  points: import.meta.glob("../../examples/benchmarks-points/*.json", { eager: true }),
   basic: import.meta.glob("../../examples/basic/*.json", { eager: true }),
 };
 
@@ -25,13 +27,14 @@ const asSuite = (value, name) => {
 };
 
 const pureSuite = asSuite(pureSuiteRaw, "pure suite");
-const classesSuite = asSuite(classesSuiteRaw, "classes suite");
+const dllistSuite = asSuite(dllistSuiteRaw, "dllist suite");
+const pointsSuite = asSuite(pointsSuiteRaw, "points suite");
 
 const benchmarkCategory = (raw, source) => {
   if (raw === "lists" || raw === "integers" || raw === "trees" || raw === "classes") {
     return raw;
   }
-  return source === "classes" ? "classes" : "lists";
+  return source === "dllist" || source === "points" ? "classes" : "lists";
 };
 
 const fileBaseName = (path) => {
@@ -59,7 +62,8 @@ const loadEntries = () => {
   };
 
   pushFrom("pure", jsonModules.pure);
-  pushFrom("classes", jsonModules.classes);
+  pushFrom("dllist", jsonModules.dllist);
+  pushFrom("points", jsonModules.points);
   pushFrom("basic", jsonModules.basic);
 
   return entries.sort((a, b) => `${a.source}:${a.id}`.localeCompare(`${b.source}:${b.id}`));
@@ -144,12 +148,58 @@ const oracleString = (spec) => {
   }
 };
 
+const formatComponentSpec = (component) => {
+  const parts = [`name=${component.name}`, `kind=${component.kind}`];
+  if (component.kind === "libraryRef" && typeof component.ref === "string") {
+    parts.push(`ref=${component.ref}`);
+  }
+  if (typeof component.op === "string") {
+    parts.push(`op=${component.op}`);
+  }
+  if (typeof component.value === "number") {
+    parts.push(`value=${component.value}`);
+  }
+  if (Array.isArray(component.inputTypes) && component.inputTypes.length > 0) {
+    parts.push(`inputTypes=[${component.inputTypes.join(", ")}]`);
+  }
+  if (typeof component.returnType === "string") {
+    parts.push(`returnType=${component.returnType}`);
+  }
+  return parts.join(", ");
+};
+
+const oracleBodyString = (spec) => {
+  const oracle = spec.oracle;
+  if (oracle === undefined) {
+    return null;
+  }
+  if (oracle.kind !== "js") {
+    return null;
+  }
+  return oracle.body ?? null;
+};
+
+const declaredComponentsString = (spec) => {
+  if (!Array.isArray(spec.components) || spec.components.length === 0) {
+    return "(none)";
+  }
+  return spec.components.map((component) => formatComponentSpec(component)).join("\n");
+};
+
+const envComponentsString = (job) => {
+  const names = [...job.env.keys()].sort((a, b) => a.localeCompare(b));
+  return names.length === 0 ? "(none)" : names.join(", ");
+};
+
 const runOne = (entry, engine, config) => {
   const started = performance.now();
   try {
     const job = prepareJsonSynthesisJob(entry.spec);
     const signature = signatureString(job);
     const oracle = oracleString(entry.spec);
+    const oracleBody = oracleBodyString(entry.spec);
+    const declaredComponents = declaredComponentsString(entry.spec);
+    const envComponents = envComponentsString(job);
 
     if (engine === "typed-escher") {
       const synth = new TypedEscherSynthesizer({
@@ -181,6 +231,9 @@ const runOne = (entry, engine, config) => {
         reboots: result?.data.reboots ?? null,
         signature,
         oracle,
+        oracleBody,
+        declaredComponents,
+        envComponents,
         program: result === null ? null : showTerm(result.program.body),
         errorMessage: null,
       };
@@ -215,6 +268,9 @@ const runOne = (entry, engine, config) => {
       reboots: null,
       signature,
       oracle,
+      oracleBody,
+      declaredComponents,
+      envComponents,
       program: result === null ? null : showTerm(result.program.body),
       errorMessage: null,
     };
@@ -230,6 +286,9 @@ const runOne = (entry, engine, config) => {
       reboots: null,
       signature: "(failed to parse signature)",
       oracle: null,
+      oracleBody: null,
+      declaredComponents: "(failed to parse components)",
+      envComponents: "(failed to build env)",
       program: null,
       errorMessage: error instanceof Error ? error.message : String(error),
     };
@@ -248,6 +307,14 @@ const renderSingleResult = (row) => {
   lines.push(`reboots: ${row.reboots ?? "-"}`);
   if (row.oracle !== null) {
     lines.push(`oracle: ${row.oracle}`);
+  }
+  lines.push("components(declared):");
+  lines.push(row.declaredComponents);
+  lines.push("components(env):");
+  lines.push(row.envComponents);
+  if (row.oracleBody !== null) {
+    lines.push("oracle.body:");
+    lines.push(row.oracleBody);
   }
   if (row.errorMessage !== null) {
     lines.push(`error: ${row.errorMessage}`);
@@ -324,7 +391,8 @@ const toChartSvg = (engine, rows, durationMs) => {
 };
 
 const suiteEntries = (suite) => {
-  const names = suite === "pure" ? pureSuite.benchmarks : classesSuite.benchmarks;
+  const names =
+    suite === "pure" ? pureSuite.benchmarks : suite === "points" ? pointsSuite.benchmarks : dllistSuite.benchmarks;
   return names
     .map((name) => entryByName.get(name))
     .filter((entry) => entry !== undefined);
@@ -369,7 +437,8 @@ runSuiteButton.addEventListener("click", async () => {
   try {
     const config = getConfig();
     const engine = suiteEngineEl.value === "ascendrec" ? "ascendrec" : "typed-escher";
-    const suite = suiteNameEl.value === "classes" ? "classes" : "pure";
+    const suite =
+      suiteNameEl.value === "dllist" ? "dllist" : suiteNameEl.value === "points" ? "points" : "pure";
     const targets = suiteEntries(suite);
     const rows = [];
     const started = performance.now();

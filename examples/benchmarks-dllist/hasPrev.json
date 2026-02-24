@@ -1,5 +1,5 @@
 {
-  "name": "dllistPrevRef",
+  "name": "hasPrev",
   "category": "classes",
   "classes": [
     {
@@ -27,7 +27,7 @@
       "List[DLNode]",
       "List[DLNode]"
     ],
-    "returnType": "Ref[DLNode]"
+    "returnType": "Bool"
   },
   "oracle": {
     "kind": "js",
@@ -38,7 +38,7 @@
       "nextHeap",
       "prevHeap"
     ],
-    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return { ref: -1 }; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; return prevRef;"
+    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return 'error'; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return false; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return false; const nextRef = node.object.fields.next; const valueRef = node.object.fields.value; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return false; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return false; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return false; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return false; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return false; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return false; return prevRef.ref !== -1;"
   },
   "components": [
     {
@@ -60,6 +60,16 @@
         "prevHeap"
       ],
       "bodyJs": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; return prevRef;"
+    },
+    {
+      "name": "isNull",
+      "kind": "libraryRef",
+      "ref": "isNull"
+    },
+    {
+      "name": "not",
+      "kind": "libraryRef",
+      "ref": "not"
     }
   ],
   "examples": [
@@ -224,9 +234,7 @@
           }
         ]
       ],
-      {
-        "ref": -1
-      }
+      false
     ],
     [
       [
@@ -389,9 +397,7 @@
           }
         ]
       ],
-      {
-        "ref": 0
-      }
+      true
     ],
     [
       [
@@ -554,9 +560,7 @@
           }
         ]
       ],
-      {
-        "ref": 1
-      }
+      true
     ],
     [
       [
@@ -719,9 +723,7 @@
           }
         ]
       ],
-      {
-        "ref": -1
-      }
+      false
     ]
   ]
 }

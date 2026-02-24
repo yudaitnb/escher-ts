@@ -1,0 +1,19 @@
+{
+  "benchmarks": [
+    "isNullNode",
+    "thisRef",
+    "nextRef",
+    "prevRef",
+    "valueRef",
+    "valueAtThis",
+    "hasNext",
+    "hasPrev",
+    "isHead",
+    "isTail",
+    "nextValueRef",
+    "tailRef",
+    "headValueRef",
+    "tailValueRef",
+    "tailPrevRef"
+  ]
+}

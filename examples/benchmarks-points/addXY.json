@@ -1,5 +1,5 @@
 {
-  "name": "pointXValueAtRef1",
+  "name": "addXY",
   "category": "classes",
   "classes": [
     {
@@ -30,7 +30,7 @@
       "xHeap",
       "yHeap"
     ],
-    "body": "if (!Array.isArray(pointHeap) || !Array.isArray(xHeap) || !Array.isArray(yHeap) || pointHeap.length <= 1) return 'error'; const p = pointHeap[1]; if (!p || typeof p !== 'object' || !('object' in p)) return 'error'; const x = p.object.fields.x; const y = p.object.fields.y; if (!x || typeof x !== 'object' || typeof x.ref !== 'number') return 'error'; if (!y || typeof y !== 'object' || typeof y.ref !== 'number') return 'error'; if (x.ref < 0 || x.ref >= xHeap.length) return 'error'; if (y.ref < 0 || y.ref >= yHeap.length) return 'error'; const xv = xHeap[x.ref]; const yv = yHeap[y.ref]; if (typeof xv !== 'number' || typeof yv !== 'number') return 'error'; return xv;"
+    "body": "if (!Array.isArray(pointHeap) || !Array.isArray(xHeap) || !Array.isArray(yHeap) || pointHeap.length <= 1) return 'error'; const p = pointHeap[1]; if (!p || typeof p !== 'object' || !('object' in p)) return 'error'; const x = p.object.fields.x; const y = p.object.fields.y; if (!x || typeof x !== 'object' || typeof x.ref !== 'number') return 'error'; if (!y || typeof y !== 'object' || typeof y.ref !== 'number') return 'error'; if (x.ref < 0 || x.ref >= xHeap.length) return 'error'; if (y.ref < 0 || y.ref >= yHeap.length) return 'error'; const xv = xHeap[x.ref]; const yv = yHeap[y.ref]; if (typeof xv !== 'number' || typeof yv !== 'number') return 'error'; return xv + yv;"
   },
   "components": [
     {
@@ -44,18 +44,35 @@
     {
       "name": "derefPoint",
       "kind": "js",
-      "inputTypes": ["List[Point]", "Ref[Point]"],
+      "inputTypes": [
+        "List[Point]",
+        "Ref[Point]"
+      ],
       "returnType": "Point",
-      "args": ["heap", "ref"],
+      "args": [
+        "heap",
+        "ref"
+      ],
       "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const p = heap[i]; return p && typeof p === 'object' && 'object' in p ? p : 'error';"
     },
     {
       "name": "loadInt",
       "kind": "js",
-      "inputTypes": ["List[Int]", "Ref[Int]"],
+      "inputTypes": [
+        "List[Int]",
+        "Ref[Int]"
+      ],
       "returnType": "Int",
-      "args": ["heap", "ref"],
+      "args": [
+        "heap",
+        "ref"
+      ],
       "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const v = heap[i]; return typeof v === 'number' ? v : 'error';"
+    },
+    {
+      "name": "addInt",
+      "kind": "intBinary",
+      "op": "add"
     }
   ],
   "examples": [
@@ -66,8 +83,12 @@
             "object": {
               "className": "Point",
               "fields": {
-                "x": { "ref": 0 },
-                "y": { "ref": 2 }
+                "x": {
+                  "ref": 0
+                },
+                "y": {
+                  "ref": 2
+                }
               }
             }
           },
@@ -75,8 +96,12 @@
             "object": {
               "className": "Point",
               "fields": {
-                "x": { "ref": 1 },
-                "y": { "ref": 3 }
+                "x": {
+                  "ref": 1
+                },
+                "y": {
+                  "ref": 3
+                }
               }
             }
           },
@@ -84,26 +109,44 @@
             "object": {
               "className": "Point",
               "fields": {
-                "x": { "ref": 2 },
-                "y": { "ref": 0 }
+                "x": {
+                  "ref": 2
+                },
+                "y": {
+                  "ref": 0
+                }
               }
             }
           }
         ],
-        [100, 200, 300, 400],
-        [9, 8, 7, 6]
+        [
+          100,
+          200,
+          300,
+          400
+        ],
+        [
+          9,
+          8,
+          7,
+          6
+        ]
       ],
-      200
+      206
     ],
     [
       [
         [
           {
-              "object": {
+            "object": {
               "className": "Point",
               "fields": {
-                "x": { "ref": 8 },
-                "y": { "ref": 2 }
+                "x": {
+                  "ref": 8
+                },
+                "y": {
+                  "ref": 2
+                }
               }
             }
           },
@@ -111,16 +154,29 @@
             "object": {
               "className": "Point",
               "fields": {
-                "x": { "ref": 1 },
-                "y": { "ref": 1 }
+                "x": {
+                  "ref": 1
+                },
+                "y": {
+                  "ref": 1
+                }
               }
             }
           }
         ],
-        [7, 11, 19, 23],
-        [30, 31, 32]
+        [
+          7,
+          11,
+          19,
+          23
+        ],
+        [
+          30,
+          31,
+          32
+        ]
       ],
-      11
+      42
     ],
     [
       [
@@ -129,8 +185,12 @@
             "object": {
               "className": "Point",
               "fields": {
-                "x": { "ref": 2 },
-                "y": { "ref": 1 }
+                "x": {
+                  "ref": 2
+                },
+                "y": {
+                  "ref": 1
+                }
               }
             }
           },
@@ -138,16 +198,30 @@
             "object": {
               "className": "Point",
               "fields": {
-                "x": { "ref": 3 },
-                "y": { "ref": 2 }
+                "x": {
+                  "ref": 3
+                },
+                "y": {
+                  "ref": 2
+                }
               }
             }
           }
         ],
-        [5, 6, 7, 31],
-        [40, 41, 42, 43]
+        [
+          5,
+          6,
+          7,
+          31
+        ],
+        [
+          40,
+          41,
+          42,
+          43
+        ]
       ],
-      31
+      73
     ]
   ]
 }

@@ -27,11 +27,13 @@ export interface TypedEscherBenchmarkCase {
 }
 
 const PURE_BENCHMARK_DIR = join(process.cwd(), "examples", "benchmarks-pure");
-const CLASS_BENCHMARK_DIR = join(process.cwd(), "examples", "benchmarks-classes");
+const DLLIST_BENCHMARK_DIR = join(process.cwd(), "examples", "benchmarks-dllist");
+const POINT_BENCHMARK_DIR = join(process.cwd(), "examples", "benchmarks-points");
 const SUITE_DIR = join(process.cwd(), "examples", "benchmark-suites");
 const PURE_SUITE_PATH = join(SUITE_DIR, "pure.json");
 const STANDARD_SUITE_PATH = join(SUITE_DIR, "standard.json");
-const CLASSES_SUITE_PATH = join(SUITE_DIR, "classes.json");
+const DLLIST_SUITE_PATH = join(SUITE_DIR, "dllist.json");
+const POINTS_SUITE_PATH = join(SUITE_DIR, "points.json");
 const asCategory = (value: unknown, benchmarkName: string): BenchmarkCategory => {
   if (value === "lists" || value === "integers" || value === "trees" || value === "classes") {
     return value;
@@ -60,7 +62,8 @@ const loadBenchmarksFromJsonDir = (benchmarkDir: string): readonly TypedEscherBe
 };
 
 const pureByName = new Map(loadBenchmarksFromJsonDir(PURE_BENCHMARK_DIR).map((benchmark) => [benchmark.name, benchmark] as const));
-const classByName = new Map(loadBenchmarksFromJsonDir(CLASS_BENCHMARK_DIR).map((benchmark) => [benchmark.name, benchmark] as const));
+const dllistByName = new Map(loadBenchmarksFromJsonDir(DLLIST_BENCHMARK_DIR).map((benchmark) => [benchmark.name, benchmark] as const));
+const pointByName = new Map(loadBenchmarksFromJsonDir(POINT_BENCHMARK_DIR).map((benchmark) => [benchmark.name, benchmark] as const));
 
 const requirePureBenchmark = (name: string): TypedEscherBenchmarkCase => {
   const benchmark = pureByName.get(name);
@@ -70,10 +73,18 @@ const requirePureBenchmark = (name: string): TypedEscherBenchmarkCase => {
   return benchmark;
 };
 
-const requireClassBenchmark = (name: string): TypedEscherBenchmarkCase => {
-  const benchmark = classByName.get(name);
+const requireDllistBenchmark = (name: string): TypedEscherBenchmarkCase => {
+  const benchmark = dllistByName.get(name);
   if (benchmark === undefined) {
-    throw new Error(`Benchmark '${name}' is not defined in ${CLASS_BENCHMARK_DIR}`);
+    throw new Error(`Benchmark '${name}' is not defined in ${DLLIST_BENCHMARK_DIR}`);
+  }
+  return benchmark;
+};
+
+const requirePointBenchmark = (name: string): TypedEscherBenchmarkCase => {
+  const benchmark = pointByName.get(name);
+  if (benchmark === undefined) {
+    throw new Error(`Benchmark '${name}' is not defined in ${POINT_BENCHMARK_DIR}`);
   }
   return benchmark;
 };
@@ -92,7 +103,8 @@ const loadSuiteNames = (path: string): readonly string[] => {
 };
 
 export const pureExamplesBenchmarks: readonly TypedEscherBenchmarkCase[] = [...pureByName.values()];
-export const classExamplesBenchmarks: readonly TypedEscherBenchmarkCase[] = [...classByName.values()];
+export const dllistExamplesBenchmarks: readonly TypedEscherBenchmarkCase[] = [...dllistByName.values()];
+export const pointExamplesBenchmarks: readonly TypedEscherBenchmarkCase[] = [...pointByName.values()];
 
 export const pureBenchmarks: readonly TypedEscherBenchmarkCase[] = loadSuiteNames(PURE_SUITE_PATH).map((name) =>
   requirePureBenchmark(name),
@@ -100,9 +112,16 @@ export const pureBenchmarks: readonly TypedEscherBenchmarkCase[] = loadSuiteName
 export const standardListBenchmarks: readonly TypedEscherBenchmarkCase[] = loadSuiteNames(STANDARD_SUITE_PATH).map((name) =>
   requirePureBenchmark(name),
 );
-export const classBenchmarks: readonly TypedEscherBenchmarkCase[] = loadSuiteNames(CLASSES_SUITE_PATH).map((name) =>
-  requireClassBenchmark(name),
+export const dllistBenchmarks: readonly TypedEscherBenchmarkCase[] = loadSuiteNames(DLLIST_SUITE_PATH).map((name) =>
+  requireDllistBenchmark(name),
 );
+export const pointBenchmarks: readonly TypedEscherBenchmarkCase[] = loadSuiteNames(POINTS_SUITE_PATH).map((name) =>
+  requirePointBenchmark(name),
+);
+
+// Backward compatibility aliases.
+export const classExamplesBenchmarks = dllistExamplesBenchmarks;
+export const classBenchmarks = dllistBenchmarks;
 
 export const reverseBenchmark = requirePureBenchmark("reverse");
 export const lengthBenchmark = requirePureBenchmark("length");

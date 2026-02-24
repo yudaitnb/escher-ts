@@ -1,0 +1,222 @@
+{
+  "name": "getYValue",
+  "category": "classes",
+  "classes": [
+    {
+      "name": "Point",
+      "fields": {
+        "x": "Ref[Int]",
+        "y": "Ref[Int]"
+      }
+    }
+  ],
+  "signature": {
+    "inputNames": [
+      "pointHeap",
+      "xHeap",
+      "yHeap"
+    ],
+    "inputTypes": [
+      "List[Point]",
+      "List[Int]",
+      "List[Int]"
+    ],
+    "returnType": "Int"
+  },
+  "oracle": {
+    "kind": "js",
+    "args": [
+      "pointHeap",
+      "xHeap",
+      "yHeap"
+    ],
+    "body": "if (!Array.isArray(pointHeap) || !Array.isArray(xHeap) || !Array.isArray(yHeap) || pointHeap.length <= 1) return 'error'; const p = pointHeap[1]; if (!p || typeof p !== 'object' || !('object' in p)) return 'error'; const y = p.object.fields.y; if (!y || typeof y !== 'object' || typeof y.ref !== 'number') return 'error'; if (y.ref < 0 || y.ref >= yHeap.length) return 'error'; const yv = yHeap[y.ref]; if (typeof yv !== 'number') return 'error'; return yv;"
+  },
+  "components": [
+    {
+      "name": "refPoint1",
+      "kind": "js",
+      "inputTypes": [],
+      "returnType": "Ref[Point]",
+      "args": [],
+      "bodyJs": "return { ref: 1 };"
+    },
+    {
+      "name": "derefPoint",
+      "kind": "js",
+      "inputTypes": [
+        "List[Point]",
+        "Ref[Point]"
+      ],
+      "returnType": "Point",
+      "args": [
+        "heap",
+        "ref"
+      ],
+      "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const p = heap[i]; return p && typeof p === 'object' && 'object' in p ? p : 'error';"
+    },
+    {
+      "name": "loadInt",
+      "kind": "js",
+      "inputTypes": [
+        "List[Int]",
+        "Ref[Int]"
+      ],
+      "returnType": "Int",
+      "args": [
+        "heap",
+        "ref"
+      ],
+      "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const v = heap[i]; return typeof v === 'number' ? v : 'error';"
+    }
+  ],
+  "examples": [
+    [
+      [
+        [
+          {
+            "object": {
+              "className": "Point",
+              "fields": {
+                "x": {
+                  "ref": 0
+                },
+                "y": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "Point",
+              "fields": {
+                "x": {
+                  "ref": 1
+                },
+                "y": {
+                  "ref": 3
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "Point",
+              "fields": {
+                "x": {
+                  "ref": 2
+                },
+                "y": {
+                  "ref": 0
+                }
+              }
+            }
+          }
+        ],
+        [
+          100,
+          200,
+          300,
+          400
+        ],
+        [
+          9,
+          8,
+          7,
+          6
+        ]
+      ],
+      6
+    ],
+    [
+      [
+        [
+          {
+            "object": {
+              "className": "Point",
+              "fields": {
+                "x": {
+                  "ref": 8
+                },
+                "y": {
+                  "ref": 2
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "Point",
+              "fields": {
+                "x": {
+                  "ref": 1
+                },
+                "y": {
+                  "ref": 1
+                }
+              }
+            }
+          }
+        ],
+        [
+          7,
+          11,
+          19,
+          23
+        ],
+        [
+          30,
+          31,
+          32
+        ]
+      ],
+      31
+    ],
+    [
+      [
+        [
+          {
+            "object": {
+              "className": "Point",
+              "fields": {
+                "x": {
+                  "ref": 2
+                },
+                "y": {
+                  "ref": 1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "Point",
+              "fields": {
+                "x": {
+                  "ref": 3
+                },
+                "y": {
+                  "ref": 2
+                }
+              }
+            }
+          }
+        ],
+        [
+          5,
+          6,
+          7,
+          31
+        ],
+        [
+          40,
+          41,
+          42,
+          43
+        ]
+      ],
+      42
+    ]
+  ]
+}

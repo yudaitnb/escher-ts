@@ -42,14 +42,17 @@
 
 - `examples/benchmarks-pure/`
   - リスト・整数・木の pure ベンチマーク JSON
-- `examples/benchmarks-classes/`
-  - 参照/ヒープを含むクラス系ベンチマーク JSON
+- `examples/benchmarks-dllist/`
+  - 参照/ヒープを含む DLList ベンチマーク JSON
+- `examples/benchmarks-points/`
+  - Point クラス専用の分割ベンチマーク JSON
 - `examples/basic/`
   - 小さな入門サンプル JSON
 - `examples/benchmark-suites/`
   - 実行対象セット定義
   - `pure.json`
-  - `classes.json`
+  - `dllist.json`
+  - `points.json`
   - `standard.json`（互換用）
 
 ## tests/

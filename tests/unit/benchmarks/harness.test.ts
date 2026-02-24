@@ -72,7 +72,7 @@ describe("benchmark harness", () => {
   });
 
   it("runs class benchmark cases with typed-escher engine", () => {
-    const classCase = classBenchmarks.find((b) => b.name === "dllistIsNull");
+    const classCase = classBenchmarks.find((b) => b.name === "isNullNode");
     expect(classCase).toBeDefined();
     const report = runTypedEscherBenchmarks({
       benchmarks: [classCase!],
@@ -93,7 +93,7 @@ describe("benchmark harness", () => {
   });
 
   it("applies per-benchmark synth config overrides", () => {
-    const classCase = classBenchmarks.find((b) => b.name === "dllistThisRef");
+    const classCase = classBenchmarks.find((b) => b.name === "thisRef");
     expect(classCase).toBeDefined();
     const benchmark = {
       ...classCase!,

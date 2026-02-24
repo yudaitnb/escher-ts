@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  classBenchmarks,
-  classExamplesBenchmarks,
+  dllistBenchmarks,
+  dllistExamplesBenchmarks,
+  pointBenchmarks,
+  pointExamplesBenchmarks,
   pureBenchmarks,
   pureExamplesBenchmarks,
   standardListBenchmarks,
@@ -41,9 +43,15 @@ describe("typed escher benchmarks", () => {
     expect(pureBenchmarks).toHaveLength(17);
   });
 
-  it("loads class benchmark specs from JSON", () => {
-    expect(classExamplesBenchmarks.length).toBeGreaterThan(0);
-    expect(classExamplesBenchmarks.every((b) => b.category === "classes")).toBe(true);
-    expect(classBenchmarks.length).toBeGreaterThan(0);
+  it("loads dllist benchmark specs from JSON", () => {
+    expect(dllistExamplesBenchmarks.length).toBeGreaterThan(0);
+    expect(dllistExamplesBenchmarks.every((b) => b.category === "classes")).toBe(true);
+    expect(dllistBenchmarks.length).toBeGreaterThan(0);
+  });
+
+  it("loads point benchmark specs from JSON", () => {
+    expect(pointExamplesBenchmarks.length).toBeGreaterThan(0);
+    expect(pointExamplesBenchmarks.every((b) => b.category === "classes")).toBe(true);
+    expect(pointBenchmarks.length).toBeGreaterThan(0);
   });
 });

@@ -1,5 +1,5 @@
 {
-  "name": "dllistValueAtThis",
+  "name": "valueRef",
   "category": "classes",
   "classes": [
     {
@@ -27,7 +27,7 @@
       "List[DLNode]",
       "List[DLNode]"
     ],
-    "returnType": "Int"
+    "returnType": "Ref[Int]"
   },
   "oracle": {
     "kind": "js",
@@ -38,7 +38,7 @@
       "nextHeap",
       "prevHeap"
     ],
-    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return 'error'; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return 'error'; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return 'error'; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return 'error'; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return 'error'; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return 'error'; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return 'error'; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return 'error'; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return 'error'; const v = valueHeap[valueRef.ref]; return typeof v === 'number' ? v : 'error';"
+    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return { ref: -1 }; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; return valueRef;"
   },
   "components": [
     {
@@ -60,20 +60,6 @@
         "prevHeap"
       ],
       "bodyJs": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; return valueRef;"
-    },
-    {
-      "name": "loadInt",
-      "kind": "js",
-      "inputTypes": [
-        "List[Int]",
-        "Ref[Int]"
-      ],
-      "returnType": "Int",
-      "args": [
-        "heap",
-        "ref"
-      ],
-      "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const v = heap[i]; return typeof v === 'number' ? v : 'error';"
     }
   ],
   "examples": [
@@ -238,7 +224,9 @@
           }
         ]
       ],
-      10
+      {
+        "ref": 0
+      }
     ],
     [
       [
@@ -401,7 +389,9 @@
           }
         ]
       ],
-      20
+      {
+        "ref": 1
+      }
     ],
     [
       [
@@ -564,7 +554,174 @@
           }
         ]
       ],
-      30
+      {
+        "ref": 2
+      }
+    ],
+    [
+      [
+        {
+          "ref": -1
+        },
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": 0
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          }
+        ],
+        [
+          10,
+          20,
+          30
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": 0
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 0
+                },
+                "next": {
+                  "ref": 1
+                },
+                "prev": {
+                  "ref": -1
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 1
+                },
+                "next": {
+                  "ref": 2
+                },
+                "prev": {
+                  "ref": 0
+                }
+              }
+            }
+          },
+          {
+            "object": {
+              "className": "DLNode",
+              "fields": {
+                "value": {
+                  "ref": 2
+                },
+                "next": {
+                  "ref": -1
+                },
+                "prev": {
+                  "ref": 1
+                }
+              }
+            }
+          }
+        ]
+      ],
+      {
+        "ref": -1
+      }
     ]
   ]
 }

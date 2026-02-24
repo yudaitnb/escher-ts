@@ -1,5 +1,5 @@
 {
-  "name": "dllistValueRef",
+  "name": "nextValueRef",
   "category": "classes",
   "classes": [
     {
@@ -38,9 +38,29 @@
       "nextHeap",
       "prevHeap"
     ],
-    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return { ref: -1 }; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; return valueRef;"
+    "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref === -1) return { ref: -1 }; if (nextRef.ref < 0 || nextRef.ref >= nextHeap.length) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; const nextNode = nodeHeap[nextRef.ref]; if (!nextNode || typeof nextNode !== 'object' || !('object' in nextNode)) return { ref: -1 }; const nextValueRef = nextNode.object.fields.value; if (!nextValueRef || typeof nextValueRef !== 'object' || typeof nextValueRef.ref !== 'number') return { ref: -1 }; if (nextValueRef.ref < 0 || nextValueRef.ref >= valueHeap.length) return { ref: -1 }; return nextValueRef;"
   },
   "components": [
+    {
+      "name": "nextOf",
+      "kind": "js",
+      "inputTypes": [
+        "Ref[DLNode]",
+        "List[DLNode]",
+        "List[Int]",
+        "List[DLNode]",
+        "List[DLNode]"
+      ],
+      "returnType": "Ref[DLNode]",
+      "args": [
+        "thisRef",
+        "nodeHeap",
+        "valueHeap",
+        "nextHeap",
+        "prevHeap"
+      ],
+      "bodyJs": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; return nextRef;"
+    },
     {
       "name": "valueRefOf",
       "kind": "js",
@@ -225,7 +245,7 @@
         ]
       ],
       {
-        "ref": 0
+        "ref": 1
       }
     ],
     [
@@ -390,7 +410,7 @@
         ]
       ],
       {
-        "ref": 1
+        "ref": 2
       }
     ],
     [
@@ -555,7 +575,7 @@
         ]
       ],
       {
-        "ref": 2
+        "ref": -1
       }
     ],
     [

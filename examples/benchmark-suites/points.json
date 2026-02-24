@@ -1,0 +1,10 @@
+{
+  "benchmarks": [
+    "getXValue",
+    "getYValue",
+    "getXRef",
+    "getYRef",
+    "addXY",
+    "subXY"
+  ]
+}

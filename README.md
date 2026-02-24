@@ -33,7 +33,7 @@ pnpm run web:preview
 Features:
 
 - Run an individual benchmark interactively
-- Run full `pure` / `classes` suites
+- Run full `pure` / `dllist` / `points` suites
 - Show result tables and runtime SVG charts
 
 `web/vite.config.ts` uses `base: "./"`, so `web/dist` can be published directly to GitHub Pages.
@@ -66,9 +66,13 @@ The published URL is usually `https://<your-github-user>.github.io/<repo-name>/`
 pnpm run benchmark:typed-escher -- --suite pure --maxCost 24 --timeoutMs 10000
 pnpm run benchmark:ascendrec -- --suite pure --maxCost 24 --timeoutMs 10000
 
-# Classes benchmarks
-pnpm run benchmark:typed-escher -- --suite classes --maxCost 24 --timeoutMs 10000
-pnpm run benchmark:ascendrec -- --suite classes --maxCost 24 --timeoutMs 10000
+# DLList benchmarks
+pnpm run benchmark:typed-escher -- --suite dllist --maxCost 24 --timeoutMs 10000
+pnpm run benchmark:ascendrec -- --suite dllist --maxCost 24 --timeoutMs 10000
+
+# Point-only benchmarks
+pnpm run benchmark:typed-escher -- --suite points --maxCost 24 --timeoutMs 10000
+pnpm run benchmark:ascendrec -- --suite points --maxCost 24 --timeoutMs 10000
 ```
 
 Default outputs:
@@ -95,13 +99,15 @@ See `docs/directories.md` for details.
 Primary locations:
 
 - `examples/benchmarks-pure/*.json`
-- `examples/benchmarks-classes/*.json`
+- `examples/benchmarks-dllist/*.json`
+- `examples/benchmarks-points/*.json`
 - `examples/basic/*.json` (small examples)
 
 Suite definitions:
 
 - `examples/benchmark-suites/pure.json`
-- `examples/benchmark-suites/classes.json`
+- `examples/benchmark-suites/dllist.json`
+- `examples/benchmark-suites/points.json`
 - `examples/benchmark-suites/standard.json` (small compatibility suite)
 
 Minimal example:
@@ -132,7 +138,7 @@ More details:
 
 ## Adding a New Task
 
-1. Add a JSON file to `examples/benchmarks-pure/` or `examples/benchmarks-classes/`
+1. Add a JSON file to `examples/benchmarks-pure/`, `examples/benchmarks-dllist/`, or `examples/benchmarks-points/`
 2. Define `signature`, `components`, and `examples`
 3. Optionally define `oracle` using `examples` / `table` / `js` / `componentRef`
 4. If needed, update `examples/benchmark-suites/*.json`
