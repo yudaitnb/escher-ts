@@ -52,6 +52,16 @@ const merged = mergeComponentEnvs(fullEnv, reversePreset);
 - `libraryRef`
 - `js`
 
+加えて、以下は暗黙コンポーネントとして常に利用可能です（JSON で定義不要）。
+
+- `falseConst`
+- `trueConst`
+- `leInt`
+- `loadInt`
+
+これらは合成器側で自動注入されます。JSON 側で同名コンポーネントを定義した場合は、
+その定義が優先されます。
+
 例:
 
 ```json
@@ -116,39 +126,64 @@ const merged = mergeComponentEnvs(fullEnv, reversePreset);
 また、`signature.fixedClassRecursivePattern: true` を使うと、
 `thisRef` より後ろの引数を一括で不変引数として扱います。
 
-### `signature.autoExpandClassSignature`（シグネチャ自動展開）
+### `signature.args`（追加引数）
 
-クラス/ヒープ系ベンチマークで `inputNames` / `inputTypes` の重複定義を減らしたい場合は、
-`signature.autoExpandClassSignature` を使ってシグネチャを生成できます。
+クラス/ヒープの自動展開に追加する引数は `signature.args` で指定します。
 
 ```json
 {
   "signature": {
     "returnType": "Ref[DLNode]",
+    "args": [
+      { "name": "target", "type": "Int", "immutable": true }
+    ]
+  }
+}
+```
+
+- `immutable: true` を指定した引数は再帰呼び出し時に不変として扱われます。
+- `signature.args[].invariant` は廃止済みです（`immutable` を使用してください）。
+- `signature.autoExpandClassSignature.additionalArgs` も廃止済みです。
+
+### `signature.autoExpandClassSignature`（シグネチャ自動展開）
+
+クラス/ヒープ系ベンチマークで `inputNames` / `inputTypes` の重複定義を減らしたい場合は、
+`signature.autoExpandClassSignature` を使ってシグネチャを生成できます。
+
+`classes` があり、`signature` が `returnType` だけを持つ場合は、
+`autoExpandClassSignature` を省略しても既定で自動展開されます。
+
+```json
+{
+  "signature": {
+    "returnType": "Ref[DLNode]",
+    "args": [{ "name": "n", "type": "Int" }],
     "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
       "fieldHeapNames": {
         "value": "valueHeap",
         "next": "nextHeap",
         "prev": "prevHeap"
-      },
-      "additionalArgs": [{ "name": "n", "type": "Int" }]
+      }
     }
   }
 }
 ```
+
+`autoExpandClassSignature` では、次は省略可能です（推論可能な場合）。
+
+- `className`（`classes` が 1 つなら自動選択）
+- `thisRefName`（既定は `thisRef`）
+- `classHeapName`（既定はクラス名から推論。例: `DLNode -> nodeHeap`, `Point -> pointHeap`）
 
 この設定で以下が自動生成されます。
 
 - `thisRef: Ref[DLNode]`（`includeThisRef: false` で省略可）
 - `nodeHeap: List[DLNode]`
 - `valueHeap/nextHeap/prevHeap`（`Ref[...]` フィールドから自動）
-- `additionalArgs`
+- `signature.args`
 
 また、`recursiveInvariantArgNames` を省略した場合は、
-`classHeap` とフィールドヒープ（および `invariant: true` の追加引数）が既定で不変引数になります。
+`classHeap` とフィールドヒープ（および `immutable: true` の追加引数）が既定で不変引数になります。
 
 ## 7. 実装ファイルの責務
 

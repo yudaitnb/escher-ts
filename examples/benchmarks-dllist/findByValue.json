@@ -14,34 +14,16 @@
   "exposeClassComponents": false,
   "signature": {
     "returnType": "Ref[DLNode]",
-    "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
-      "fieldHeapNames": {
-        "value": "valueHeap",
-        "next": "nextHeap",
-        "prev": "prevHeap"
-      },
-      "additionalArgs": [
-        {
-          "name": "target",
-          "type": "Int",
-          "invariant": true
-        }
-      ]
-    }
+    "args": [
+      {
+        "name": "target",
+        "type": "Int",
+        "immutable": true
+      }
+    ]
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "thisRef",
-      "nodeHeap",
-      "valueHeap",
-      "nextHeap",
-      "prevHeap",
-      "target"
-    ],
     "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap) || !thisRef || typeof thisRef.ref !== 'number' || typeof target !== 'number') return { ref: -1 }; let cur = thisRef.ref; if (cur === -1) return { ref: -1 }; if (cur < -1 || cur >= nodeHeap.length) return { ref: -1 }; let guard = 0; const maxGuard = nodeHeap.length + 1; while (cur !== -1 && guard <= maxGuard) { if (cur < 0 || cur >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[cur]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; const v = valueHeap[valueRef.ref]; if (typeof v !== 'number') return { ref: -1 }; if (v === target) return { ref: cur }; cur = nextRef.ref; guard += 1; } return { ref: -1 };"
   },
   "autoClassFieldComponents": true,

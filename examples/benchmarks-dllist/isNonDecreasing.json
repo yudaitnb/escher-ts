@@ -13,25 +13,10 @@
   ],
   "exposeClassComponents": false,
   "signature": {
-    "returnType": "Bool",
-    "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
-      "fieldHeapNames": {
-        "value": "valueHeap",
-        "next": "nextHeap",
-        "prev": "prevHeap"
-      }
-    }
+    "returnType": "Bool"
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "thisRef",
-      "nodeHeap",
-      "valueHeap"
-    ],
     "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !thisRef || typeof thisRef.ref !== 'number') return true; let cur = thisRef.ref; if (cur === -1) return true; if (cur < -1 || cur >= nodeHeap.length) return true; let guard = 0; const maxGuard = nodeHeap.length + 1; while (cur !== -1 && guard <= maxGuard) { if (cur < 0 || cur >= nodeHeap.length) return true; const node = nodeHeap[cur]; if (!node || typeof node !== 'object' || !('object' in node)) return true; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return true; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return true; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return true; const v = valueHeap[valueRef.ref]; if (typeof v !== 'number') return true; if (nextRef.ref === -1) return true; if (nextRef.ref < 0 || nextRef.ref >= nodeHeap.length) return true; const nextNode = nodeHeap[nextRef.ref]; if (!nextNode || typeof nextNode !== 'object' || !('object' in nextNode)) return true; const nextValueRef = nextNode.object.fields.value; if (!nextValueRef || typeof nextValueRef !== 'object' || typeof nextValueRef.ref !== 'number') return true; if (nextValueRef.ref < 0 || nextValueRef.ref >= valueHeap.length) return true; const nv = valueHeap[nextValueRef.ref]; if (typeof nv !== 'number') return true; if (v > nv) return false; cur = nextRef.ref; guard += 1; } return true;"
   },
   "autoClassFieldComponents": true,
@@ -40,50 +25,6 @@
       "name": "isNull",
       "kind": "libraryRef",
       "ref": "isNull"
-    },
-    {
-      "name": "loadInt",
-      "kind": "js",
-      "inputTypes": [
-        "List[Int]",
-        "Ref[Int]"
-      ],
-      "returnType": "Int",
-      "args": [
-        "heap",
-        "ref"
-      ],
-      "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const v = heap[i]; return typeof v === 'number' ? v : 'error';"
-    },
-    {
-      "name": "leInt",
-      "kind": "js",
-      "inputTypes": [
-        "Int",
-        "Int"
-      ],
-      "returnType": "Bool",
-      "args": [
-        "a",
-        "b"
-      ],
-      "bodyJs": "return (typeof a === 'number' && typeof b === 'number') ? (a <= b) : 'error';"
-    },
-    {
-      "name": "trueConst",
-      "kind": "js",
-      "inputTypes": [],
-      "returnType": "Bool",
-      "args": [],
-      "bodyJs": "return true;"
-    },
-    {
-      "name": "falseConst",
-      "kind": "js",
-      "inputTypes": [],
-      "returnType": "Bool",
-      "args": [],
-      "bodyJs": "return false;"
     }
   ],
   "examples": [

@@ -13,24 +13,10 @@
   ],
   "exposeClassComponents": false,
   "signature": {
-    "returnType": "Int",
-    "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
-      "fieldHeapNames": {
-        "value": "valueHeap",
-        "next": "nextHeap",
-        "prev": "prevHeap"
-      }
-    }
+    "returnType": "Int"
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "thisRef",
-      "nodeHeap"
-    ],
     "body": "if (!Array.isArray(nodeHeap) || !thisRef || typeof thisRef.ref !== 'number') return 0; let cur = thisRef.ref; if (cur === -1) return 0; if (cur < -1 || cur >= nodeHeap.length) return 0; let len = 0; let guard = 0; const max = nodeHeap.length + 1; while (cur !== -1 && guard <= max) { if (cur < 0 || cur >= nodeHeap.length) return 0; const node = nodeHeap[cur]; if (!node || typeof node !== 'object' || !('object' in node)) return 0; const nextRef = node.object.fields.next; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return 0; len += 1; cur = nextRef.ref; guard += 1; } return len;"
   },
   "autoClassFieldComponents": true,

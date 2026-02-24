@@ -13,22 +13,11 @@
   "signature": {
     "returnType": "Int",
     "autoExpandClassSignature": {
-      "className": "Point",
-      "includeThisRef": false,
-      "classHeapName": "pointHeap",
-      "fieldHeapNames": {
-        "x": "xHeap",
-        "y": "yHeap"
-      }
+      "includeThisRef": false
     }
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "pointHeap",
-      "xHeap",
-      "yHeap"
-    ],
     "body": "if (!Array.isArray(pointHeap) || !Array.isArray(xHeap) || !Array.isArray(yHeap) || pointHeap.length <= 1) return 'error'; const p = pointHeap[1]; if (!p || typeof p !== 'object' || !('object' in p)) return 'error'; const x = p.object.fields.x; const y = p.object.fields.y; if (!x || typeof x !== 'object' || typeof x.ref !== 'number') return 'error'; if (!y || typeof y !== 'object' || typeof y.ref !== 'number') return 'error'; if (x.ref < 0 || x.ref >= xHeap.length) return 'error'; if (y.ref < 0 || y.ref >= yHeap.length) return 'error'; const xv = xHeap[x.ref]; const yv = yHeap[y.ref]; if (typeof xv !== 'number' || typeof yv !== 'number') return 'error'; return xv + yv;"
   },
   "components": [
@@ -53,20 +42,6 @@
         "ref"
       ],
       "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const p = heap[i]; return p && typeof p === 'object' && 'object' in p ? p : 'error';"
-    },
-    {
-      "name": "loadInt",
-      "kind": "js",
-      "inputTypes": [
-        "List[Int]",
-        "Ref[Int]"
-      ],
-      "returnType": "Int",
-      "args": [
-        "heap",
-        "ref"
-      ],
-      "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const v = heap[i]; return typeof v === 'number' ? v : 'error';"
     },
     {
       "name": "addInt",

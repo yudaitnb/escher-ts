@@ -119,6 +119,46 @@ describe("user-friendly JSON spec", () => {
     expect(job.oracle([valueInt(3), valueInt(4)])).toEqual(valueInt(10));
   });
 
+  it("auto-fills js oracle args from auto-expanded class signature", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "classOracleAutoArgs",
+      "classes": [
+        {
+          "name": "Point",
+          "fields": {
+            "x": "Ref[Int]",
+            "y": "Ref[Int]"
+          }
+        }
+      ],
+      "signature": {
+        "returnType": "Int",
+        "autoExpandClassSignature": {
+          "className": "Point",
+          "includeThisRef": false
+        }
+      },
+      "oracle": {
+        "kind": "js",
+        "body": "if (!Array.isArray(pointHeap) || pointHeap.length <= 1) return 'error'; const p = pointHeap[1]; if (!p || typeof p !== 'object' || !('object' in p)) return 'error'; const x = p.object.fields.x; if (!x || typeof x !== 'object' || typeof x.ref !== 'number') return 'error'; if (x.ref < 0 || x.ref >= xHeap.length) return 'error'; return xHeap[x.ref];"
+      },
+      "components": [],
+      "examples": [
+        [[
+          [
+            { "object": { "className": "Point", "fields": { "x": { "ref": 0 }, "y": { "ref": 1 } } } },
+            { "object": { "className": "Point", "fields": { "x": { "ref": 1 }, "y": { "ref": 0 } } } }
+          ],
+          [10, 20],
+          [30, 40]
+        ], 20]
+      ]
+    }`);
+    const job = prepareJsonSynthesisJob(spec);
+    const [args, out] = job.examples[0]!;
+    expect(job.oracle(args)).toEqual(out);
+  });
+
   it("supports componentsPreset + componentRef oracle + error literal", () => {
     const spec = parseJsonSynthesisSpec(`{
       "name": "lastInList",
@@ -320,6 +360,9 @@ describe("user-friendly JSON spec", () => {
       "exposeClassComponents": false,
       "signature": {
         "returnType": "Bool",
+        "args": [
+          { "name": "target", "type": "Int", "immutable": true }
+        ],
         "autoExpandClassSignature": {
           "className": "DLNode",
           "thisRefName": "thisRef",
@@ -328,10 +371,7 @@ describe("user-friendly JSON spec", () => {
             "value": "valueHeap",
             "next": "nextHeap",
             "prev": "prevHeap"
-          },
-          "additionalArgs": [
-            { "name": "target", "type": "Int" }
-          ]
+          }
         }
       },
       "components": [],
@@ -349,6 +389,42 @@ describe("user-friendly JSON spec", () => {
       tyList(tyObject("DLNode")),
       tyList(tyObject("DLNode")),
       tyInt,
+    ]);
+    expect(job.returnType).toEqual(tyBool);
+    expect(job.recursiveInvariantArgIndices).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it("implicitly auto-expands class signature when only returnType is provided", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "autoSigDefaults",
+      "classes": [
+        {
+          "name": "DLNode",
+          "fields": {
+            "value": "Ref[Int]",
+            "next": "Ref[DLNode]",
+            "prev": "Ref[DLNode]"
+          }
+        }
+      ],
+      "exposeClassComponents": false,
+      "signature": {
+        "returnType": "Bool"
+      },
+      "components": [],
+      "examples": [
+        [[{"ref": -1}, [], [], [], []], false]
+      ]
+    }`);
+
+    const job = prepareJsonSynthesisJob(spec);
+    expect(job.inputNames).toEqual(["thisRef", "nodeHeap", "valueHeap", "nextHeap", "prevHeap"]);
+    expect(job.inputTypes).toEqual([
+      tyRef(tyObject("DLNode")),
+      tyList(tyObject("DLNode")),
+      tyList(tyInt),
+      tyList(tyObject("DLNode")),
+      tyList(tyObject("DLNode")),
     ]);
     expect(job.returnType).toEqual(tyBool);
     expect(job.recursiveInvariantArgIndices).toEqual([1, 2, 3, 4]);
@@ -371,13 +447,13 @@ describe("user-friendly JSON spec", () => {
       "autoClassFieldComponents": true,
       "signature": {
         "returnType": "Ref[DLNode]",
+        "args": [{ "name": "target", "type": "Int" }],
         "autoExpandClassSignature": {
           "className": "DLNode",
           "thisRefName": "thisRef",
           "classHeapName": "nodeHeap",
           "fieldHeapFields": ["value"],
-          "fieldHeapNames": { "value": "valueHeap" },
-          "additionalArgs": [{ "name": "target", "type": "Int" }]
+          "fieldHeapNames": { "value": "valueHeap" }
         }
       },
       "components": [],
@@ -391,6 +467,63 @@ describe("user-friendly JSON spec", () => {
     expect(job.env.get("nextOf")?.inputTypes.length).toBe(2);
     expect(job.env.get("prevOf")?.inputTypes.length).toBe(2);
     expect(job.env.get("valueOf")?.inputTypes.length).toBe(3);
+  });
+
+  it("rejects removed additionalArgs under autoExpandClassSignature", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "legacyAdditionalArgs",
+      "classes": [
+        {
+          "name": "DLNode",
+          "fields": {
+            "value": "Ref[Int]",
+            "next": "Ref[DLNode]",
+            "prev": "Ref[DLNode]"
+          }
+        }
+      ],
+      "signature": {
+        "returnType": "Ref[DLNode]",
+        "autoExpandClassSignature": {
+          "additionalArgs": [{ "name": "target", "type": "Int", "invariant": true }]
+        }
+      },
+      "components": [],
+      "examples": [
+        [[{"ref": -1}, [], [], [], [], 0], {"ref": -1}]
+      ]
+    }`);
+    expect(() => prepareJsonSynthesisJob(spec)).toThrowError(
+      /autoExpandClassSignature\.additionalArgs is removed; use signature\.args instead/,
+    );
+  });
+
+  it("rejects removed signature.args[].invariant", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "legacyInvariant",
+      "classes": [
+        {
+          "name": "DLNode",
+          "fields": {
+            "value": "Ref[Int]",
+            "next": "Ref[DLNode]",
+            "prev": "Ref[DLNode]"
+          }
+        }
+      ],
+      "signature": {
+        "returnType": "Ref[DLNode]",
+        "args": [{ "name": "target", "type": "Int", "invariant": true }]
+      },
+      "components": [],
+      "examples": [
+        [[{"ref": -1}, [], [], [], [], 0], {"ref": -1}]
+      ]
+    }`);
+
+    expect(() => prepareJsonSynthesisJob(spec)).toThrowError(
+      /signature\.args\[\]\.invariant is removed; use signature\.args\[\]\.immutable instead/,
+    );
   });
 
   it("infers class heap invariants without recursiveInvariantArgNames", () => {
@@ -420,5 +553,28 @@ describe("user-friendly JSON spec", () => {
 
     const job = prepareJsonSynthesisJob(spec);
     expect(job.recursiveInvariantArgIndices).toEqual([1, 2, 3, 4]);
+  });
+
+  it("injects implicit helper components for JSON synthesis", () => {
+    const spec = parseJsonSynthesisSpec(`{
+      "name": "implicitHelpers",
+      "signature": {
+        "inputNames": ["xs", "r"],
+        "inputTypes": ["List[Int]", "Ref[Int]"],
+        "returnType": "Int"
+      },
+      "components": [],
+      "examples": [
+        [[[10, 20], {"ref": 1}], 20]
+      ]
+    }`);
+
+    const job = prepareJsonSynthesisJob(spec);
+    expect(job.env.get("falseConst")?.executeEfficient([])).toEqual(valueBool(false));
+    expect(job.env.get("trueConst")?.executeEfficient([])).toEqual(valueBool(true));
+    expect(job.env.get("leInt")?.executeEfficient([valueInt(1), valueInt(2)])).toEqual(valueBool(true));
+    expect(job.env.get("loadInt")?.executeEfficient([valueList([valueInt(10), valueInt(20)]), valueRef(1)])).toEqual(
+      valueInt(20),
+    );
   });
 });

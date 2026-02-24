@@ -14,33 +14,15 @@
   "exposeClassComponents": false,
   "signature": {
     "returnType": "Ref[DLNode]",
-    "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
-      "fieldHeapNames": {
-        "value": "valueHeap",
-        "next": "nextHeap",
-        "prev": "prevHeap"
-      },
-      "additionalArgs": [
-        {
-          "name": "n",
-          "type": "Int"
-        }
-      ]
-    }
+    "args": [
+      {
+        "name": "n",
+        "type": "Int"
+      }
+    ]
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "thisRef",
-      "nodeHeap",
-      "valueHeap",
-      "nextHeap",
-      "prevHeap",
-      "n"
-    ],
     "body": "if (!Array.isArray(nodeHeap) || !thisRef || typeof thisRef.ref !== 'number' || typeof n !== 'number') return { ref: -1 }; if (n < 0) return { ref: -1 }; let cur = thisRef.ref; if (cur === -1) return { ref: -1 }; if (cur < -1 || cur >= nodeHeap.length) return { ref: -1 }; let steps = n; while (steps > 0) { if (cur < 0 || cur >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[cur]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const nextRef = node.object.fields.next; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; cur = nextRef.ref; steps -= 1; if (cur === -1 && steps > 0) return { ref: -1 }; } if (cur < -1 || cur >= nodeHeap.length) return { ref: -1 }; return { ref: cur };"
   },
   "autoClassFieldComponents": true,

@@ -13,46 +13,14 @@
   ],
   "exposeClassComponents": false,
   "signature": {
-    "returnType": "Int",
-    "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
-      "fieldHeapNames": {
-        "value": "valueHeap",
-        "next": "nextHeap",
-        "prev": "prevHeap"
-      }
-    }
+    "returnType": "Int"
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "thisRef",
-      "nodeHeap",
-      "valueHeap",
-      "nextHeap",
-      "prevHeap"
-    ],
     "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return 'error'; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return 'error'; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return 'error'; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return 'error'; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return 'error'; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return 'error'; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return 'error'; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return 'error'; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return 'error'; const v = valueHeap[valueRef.ref]; return typeof v === 'number' ? v : 'error';"
   },
   "autoClassFieldComponents": true,
-  "components": [
-    {
-      "name": "loadInt",
-      "kind": "js",
-      "inputTypes": [
-        "List[Int]",
-        "Ref[Int]"
-      ],
-      "returnType": "Int",
-      "args": [
-        "heap",
-        "ref"
-      ],
-      "bodyJs": "if (!Array.isArray(heap) || !ref || typeof ref !== 'object' || typeof ref.ref !== 'number') return 'error'; const i = ref.ref; if (i < 0 || i >= heap.length) return 'error'; const v = heap[i]; return typeof v === 'number' ? v : 'error';"
-    }
-  ],
+  "components": [],
   "examples": [
     [
       [

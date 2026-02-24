@@ -13,27 +13,10 @@
   ],
   "exposeClassComponents": false,
   "signature": {
-    "returnType": "Ref[DLNode]",
-    "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
-      "fieldHeapNames": {
-        "value": "valueHeap",
-        "next": "nextHeap",
-        "prev": "prevHeap"
-      }
-    }
+    "returnType": "Ref[DLNode]"
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "thisRef",
-      "nodeHeap",
-      "valueHeap",
-      "nextHeap",
-      "prevHeap"
-    ],
     "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return 'error'; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return 'error'; return thisRef;"
   },
   "autoClassFieldComponents": true,

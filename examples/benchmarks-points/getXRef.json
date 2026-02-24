@@ -13,22 +13,11 @@
   "signature": {
     "returnType": "Ref[Int]",
     "autoExpandClassSignature": {
-      "className": "Point",
-      "includeThisRef": false,
-      "classHeapName": "pointHeap",
-      "fieldHeapNames": {
-        "x": "xHeap",
-        "y": "yHeap"
-      }
+      "includeThisRef": false
     }
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "pointHeap",
-      "xHeap",
-      "yHeap"
-    ],
     "body": "if (!Array.isArray(pointHeap) || !Array.isArray(xHeap) || !Array.isArray(yHeap) || pointHeap.length <= 1) return 'error'; const p = pointHeap[1]; if (!p || typeof p !== 'object' || !('object' in p)) return 'error'; const x = p.object.fields.x; const y = p.object.fields.y; if (!x || typeof x !== 'object' || typeof x.ref !== 'number') return 'error'; if (!y || typeof y !== 'object' || typeof y.ref !== 'number') return 'error'; if (x.ref < 0 || x.ref >= xHeap.length) return 'error'; if (y.ref < 0 || y.ref >= yHeap.length) return 'error'; return x;"
   },
   "components": [

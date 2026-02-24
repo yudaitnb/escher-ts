@@ -13,27 +13,10 @@
   ],
   "exposeClassComponents": false,
   "signature": {
-    "returnType": "Ref[DLNode]",
-    "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
-      "fieldHeapNames": {
-        "value": "valueHeap",
-        "next": "nextHeap",
-        "prev": "prevHeap"
-      }
-    }
+    "returnType": "Ref[DLNode]"
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "thisRef",
-      "nodeHeap",
-      "valueHeap",
-      "nextHeap",
-      "prevHeap"
-    ],
     "body": "if (!Array.isArray(nodeHeap) || !Array.isArray(valueHeap) || !Array.isArray(nextHeap) || !Array.isArray(prevHeap)) return { ref: -1 }; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; const idx = thisRef.ref; if (idx < 0 || idx >= nodeHeap.length) return { ref: -1 }; const node = nodeHeap[idx]; if (!node || typeof node !== 'object' || !('object' in node)) return { ref: -1 }; const valueRef = node.object.fields.value; const nextRef = node.object.fields.next; const prevRef = node.object.fields.prev; if (!valueRef || typeof valueRef !== 'object' || typeof valueRef.ref !== 'number') return { ref: -1 }; if (!nextRef || typeof nextRef !== 'object' || typeof nextRef.ref !== 'number') return { ref: -1 }; if (!prevRef || typeof prevRef !== 'object' || typeof prevRef.ref !== 'number') return { ref: -1 }; if (valueRef.ref < 0 || valueRef.ref >= valueHeap.length) return { ref: -1 }; if (nextRef.ref !== -1 && (nextRef.ref < 0 || nextRef.ref >= nextHeap.length)) return { ref: -1 }; if (prevRef.ref !== -1 && (prevRef.ref < 0 || prevRef.ref >= prevHeap.length)) return { ref: -1 }; return nextRef;"
   },
   "autoClassFieldComponents": true,

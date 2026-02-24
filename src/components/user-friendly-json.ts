@@ -12,7 +12,7 @@ import {
   type UserLiteral,
 } from "./user-friendly.js";
 import { type ArgList } from "./component.js";
-import { equalTermValue, type TermValue, valueBool, valueError, valueObject, valueRef } from "../types/value.js";
+import { equalTermValue, type TermValue, valueBool, valueError, valueInt, valueObject, valueRef } from "../types/value.js";
 import { equalsType, type Type, tyBool, tyInt, tyList, tyObject, tyPair, tyRef, tyTree } from "../types/type.js";
 import {
   getBenchmarkPresetComponents,
@@ -46,10 +46,10 @@ export interface JsonClassSpec {
   readonly methods?: readonly JsonClassMethodSpec[];
 }
 
-export interface JsonAutoExpandAdditionalArgSpec {
+export interface JsonSignatureArgSpec {
   readonly name: string;
   readonly type: string;
-  readonly invariant?: boolean;
+  readonly immutable?: boolean;
 }
 
 export interface JsonAutoExpandClassSignatureSpec {
@@ -60,7 +60,6 @@ export interface JsonAutoExpandClassSignatureSpec {
   readonly includeRefFieldHeaps?: boolean;
   readonly fieldHeapFields?: readonly string[];
   readonly fieldHeapNames?: Readonly<Record<string, string>>;
-  readonly additionalArgs?: readonly JsonAutoExpandAdditionalArgSpec[];
   readonly recursiveInvariantArgNames?: readonly string[];
 }
 
@@ -79,6 +78,7 @@ export interface JsonSynthesisSpec {
     readonly inputNames?: readonly string[];
     readonly inputTypes?: readonly string[];
     readonly returnType: string;
+    readonly args?: readonly JsonSignatureArgSpec[];
     readonly fixedClassRecursivePattern?: boolean;
     readonly recursiveInvariantArgNames?: readonly string[];
     readonly autoExpandClassSignature?: JsonAutoExpandClassSignatureSpec;
@@ -211,6 +211,60 @@ const buildLibraryComponentByName = (): ReadonlyMap<string, ComponentImpl> => {
 
 const libraryComponentByName = buildLibraryComponentByName();
 
+const implicitJsonComponentDefs: readonly ComponentDefinition[] = [
+  {
+    name: "falseConst",
+    inputTypes: [],
+    returnType: tyBool,
+    impl: () => valueBool(false),
+  },
+  {
+    name: "trueConst",
+    inputTypes: [],
+    returnType: tyBool,
+    impl: () => valueBool(true),
+  },
+  {
+    name: "leInt",
+    inputTypes: [tyInt, tyInt],
+    returnType: tyBool,
+    impl: ([x, y]) =>
+      x !== undefined && y !== undefined && x.tag === "int" && y.tag === "int"
+        ? valueBool(x.value <= y.value)
+        : valueError,
+  },
+  {
+    name: "loadInt",
+    inputTypes: [tyList(tyInt), tyRef(tyInt)],
+    returnType: tyInt,
+    impl: ([heap, ref]) => {
+      if (heap === undefined || ref === undefined || heap.tag !== "list" || ref.tag !== "ref") {
+        return valueError;
+      }
+      const i = ref.value;
+      if (i < 0 || i >= heap.elems.length) {
+        return valueError;
+      }
+      const v = heap.elems[i];
+      return v !== undefined && v.tag === "int" ? valueInt(v.value) : valueError;
+    },
+  },
+];
+
+const implicitJsonComponents = defineComponents(implicitJsonComponentDefs);
+
+const mergeWithImplicitJsonComponents = (components: readonly ComponentImpl[]): readonly ComponentImpl[] => {
+  const out: ComponentImpl[] = [...components];
+  const existing = new Set(components.map((component) => component.name));
+  for (const implicit of implicitJsonComponents) {
+    if (!existing.has(implicit.name)) {
+      out.push(implicit);
+      existing.add(implicit.name);
+    }
+  }
+  return out;
+};
+
 const ensureSpecShape = (value: unknown): JsonSynthesisSpec => {
   if (typeof value !== "object" || value === null) {
     throw new Error("JSON root must be an object");
@@ -246,6 +300,7 @@ const ensureSpecShape = (value: unknown): JsonSynthesisSpec => {
           ...(Array.isArray(signatureRaw.inputNames) ? { inputNames: signatureRaw.inputNames as readonly string[] } : {}),
           ...(Array.isArray(signatureRaw.inputTypes) ? { inputTypes: signatureRaw.inputTypes as readonly string[] } : {}),
           returnType: signatureRaw.returnType as string,
+          ...(Array.isArray(signatureRaw.args) ? { args: signatureRaw.args as readonly JsonSignatureArgSpec[] } : {}),
           ...(typeof signatureRaw.fixedClassRecursivePattern === "boolean"
             ? { fixedClassRecursivePattern: signatureRaw.fixedClassRecursivePattern as boolean }
             : {}),
@@ -904,6 +959,15 @@ interface ResolvedSignature {
 const lowerCamel = (text: string): string =>
   text.length === 0 ? text : text[0]!.toLowerCase() + text.slice(1);
 
+const inferDefaultClassHeapName = (className: string): string => {
+  const words = className.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+/g) ?? [];
+  const lastAlphaWord = [...words].reverse().find((word) => /[A-Za-z]/.test(word));
+  if (lastAlphaWord !== undefined) {
+    return `${lastAlphaWord.toLowerCase()}Heap`;
+  }
+  return `${lowerCamel(className)}Heap`;
+};
+
 const resolveSignatureFromAutoExpansion = (
   spec: JsonSynthesisSpec,
   resolveClassType: ((name: string) => Type | null) | undefined,
@@ -940,7 +1004,7 @@ const resolveSignatureFromAutoExpansion = (
     ? asString(expansion.thisRefName ?? "thisRef", "signature.autoExpandClassSignature.thisRefName")
     : null;
   const classHeapName = asString(
-    expansion.classHeapName ?? `${lowerCamel(className)}Heap`,
+    expansion.classHeapName ?? inferDefaultClassHeapName(className),
     "signature.autoExpandClassSignature.classHeapName",
   );
   const includeRefFieldHeaps = expansion.includeRefFieldHeaps ?? true;
@@ -968,6 +1032,12 @@ const resolveSignatureFromAutoExpansion = (
     fieldHeapNameByField.set(
       asString(fieldName, "signature.autoExpandClassSignature.fieldHeapNames field"),
       asString(heapName, `signature.autoExpandClassSignature.fieldHeapNames.${fieldName}`),
+    );
+  }
+
+  if ("additionalArgs" in (expansion as Record<string, unknown>)) {
+    throw new Error(
+      "signature.autoExpandClassSignature.additionalArgs is removed; use signature.args instead",
     );
   }
 
@@ -1010,12 +1080,15 @@ const resolveSignatureFromAutoExpansion = (
     defaultInvariantArgNames.push(heapName);
   }
 
-  for (const [idx, arg] of (expansion.additionalArgs ?? []).entries()) {
-    const argName = asString(arg.name, `signature.autoExpandClassSignature.additionalArgs[${idx}].name`);
-    const argTypeText = asString(arg.type, `signature.autoExpandClassSignature.additionalArgs[${idx}].type`);
+  for (const [idx, arg] of (spec.signature?.args ?? []).entries()) {
+    if ("invariant" in (arg as unknown as Record<string, unknown>)) {
+      throw new Error("signature.args[].invariant is removed; use signature.args[].immutable instead");
+    }
+    const argName = asString(arg.name, `signature.args[${idx}].name`);
+    const argTypeText = asString(arg.type, `signature.args[${idx}].type`);
     const argType = parseTypeSpecWithResolver(argTypeText, resolveClassType);
     pushArg(argName, argType);
-    if (arg.invariant === true) {
+    if (arg.immutable === true) {
       defaultInvariantArgNames.push(argName);
     }
   }
@@ -1046,6 +1119,8 @@ const resolveSignature = (
   const hasExplicitInputNames = Array.isArray(spec.signature.inputNames);
   const hasExplicitInputTypes = Array.isArray(spec.signature.inputTypes);
   const hasAutoExpansion = spec.signature.autoExpandClassSignature !== undefined;
+  const hasClassSpec = spec.classes !== undefined && spec.classes.length > 0;
+  const shouldUseImplicitAutoExpansion = !hasAutoExpansion && !hasExplicitInputNames && !hasExplicitInputTypes && hasClassSpec;
 
   if (hasAutoExpansion && (hasExplicitInputNames || hasExplicitInputTypes)) {
     throw new Error(
@@ -1053,7 +1128,17 @@ const resolveSignature = (
     );
   }
 
-  if (hasAutoExpansion) {
+  if (hasAutoExpansion || shouldUseImplicitAutoExpansion) {
+    if (shouldUseImplicitAutoExpansion) {
+      const normalized: JsonSynthesisSpec = {
+        ...spec,
+        signature: {
+          ...spec.signature,
+          autoExpandClassSignature: {},
+        },
+      };
+      return resolveSignatureFromAutoExpansion(normalized, resolveClassType);
+    }
     return resolveSignatureFromAutoExpansion(spec, resolveClassType);
   }
 
@@ -1134,6 +1219,15 @@ export const prepareJsonSynthesisJob = (spec: JsonSynthesisSpec): PreparedJsonSy
   const functionName = prepared.name ?? "synthesized";
   const resolveClassType = buildClassTypeResolver(spec.classes);
   const signature = resolveSignature(spec, resolveClassType);
+  const hasExplicitInputNames = Array.isArray(spec.signature?.inputNames);
+  const hasExplicitInputTypes = Array.isArray(spec.signature?.inputTypes);
+  const usesAutoExpandedSignature =
+    spec.signature?.autoExpandClassSignature !== undefined ||
+    (spec.signature !== undefined &&
+      !hasExplicitInputNames &&
+      !hasExplicitInputTypes &&
+      spec.classes !== undefined &&
+      spec.classes.length > 0);
 
   const autoClassFieldDefs = buildAutoClassFieldComponentDefs(
     spec,
@@ -1142,8 +1236,10 @@ export const prepareJsonSynthesisJob = (spec: JsonSynthesisSpec): PreparedJsonSy
     new Set(prepared.env.keys()),
   );
   const autoClassFieldComponents = autoClassFieldDefs.length === 0 ? [] : defineComponents(autoClassFieldDefs);
-  const components = autoClassFieldComponents.length === 0 ? prepared.components : [...prepared.components, ...autoClassFieldComponents];
-  const env = autoClassFieldComponents.length === 0 ? prepared.env : createComponentEnv(components);
+  const explicitAndAutoComponents =
+    autoClassFieldComponents.length === 0 ? prepared.components : [...prepared.components, ...autoClassFieldComponents];
+  const components = mergeWithImplicitJsonComponents(explicitAndAutoComponents);
+  const env = createComponentEnv(components);
 
   const oracle =
     spec.oracle?.kind === "table"
@@ -1152,8 +1248,12 @@ export const prepareJsonSynthesisJob = (spec: JsonSynthesisSpec): PreparedJsonSy
           spec.oracle.default === undefined || spec.oracle.default === "error" ? valueError : literalToValue(spec.oracle.default),
         )
       : spec.oracle?.kind === "js"
-        ? createOracleFromJs(spec.oracle.args, asString(spec.oracle.body, "oracle.body"))
-      : spec.oracle?.kind === "componentRef"
+        ? createOracleFromJs(
+            spec.oracle.args ??
+              (usesAutoExpandedSignature ? signature.inputNames : undefined),
+            asString(spec.oracle.body, "oracle.body"),
+          )
+        : spec.oracle?.kind === "componentRef"
         ? (() => {
             const refName = asString(spec.oracle.name, "oracle.name");
             const comp = libraryComponentByName.get(refName);

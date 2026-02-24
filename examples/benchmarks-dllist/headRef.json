@@ -13,27 +13,10 @@
   ],
   "exposeClassComponents": false,
   "signature": {
-    "returnType": "Ref[DLNode]",
-    "autoExpandClassSignature": {
-      "className": "DLNode",
-      "thisRefName": "thisRef",
-      "classHeapName": "nodeHeap",
-      "fieldHeapNames": {
-        "value": "valueHeap",
-        "next": "nextHeap",
-        "prev": "prevHeap"
-      }
-    }
+    "returnType": "Ref[DLNode]"
   },
   "oracle": {
     "kind": "js",
-    "args": [
-      "thisRef",
-      "nodeHeap",
-      "valueHeap",
-      "nextHeap",
-      "prevHeap"
-    ],
     "body": "if (!Array.isArray(nodeHeap)) return { ref: -1 }; if (!thisRef || typeof thisRef !== 'object' || typeof thisRef.ref !== 'number') return { ref: -1 }; let idx = thisRef.ref; if (idx === -1) return { ref: -1 }; if (idx < -1 || idx >= nodeHeap.length) return { ref: -1 }; let steps = 0; const maxSteps = nodeHeap.length + 1; while (idx !== -1 && steps <= maxSteps) { const n = nodeHeap[idx]; if (!n || typeof n !== 'object' || !('object' in n)) return { ref: -1 }; const prev = n.object.fields.prev; if (!prev || typeof prev !== 'object' || typeof prev.ref !== 'number') return { ref: -1 }; if (prev.ref === -1) return { ref: idx }; if (prev.ref < -1 || prev.ref >= nodeHeap.length) return { ref: -1 }; idx = prev.ref; steps += 1; } return { ref: -1 };"
   },
   "autoClassFieldComponents": true,

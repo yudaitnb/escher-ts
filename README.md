@@ -172,6 +172,18 @@ More details:
 - Component definitions: `docs/components.md`
 - Test strategy: `tests/README.md`
 
+For class-style JSON tasks, you can keep specs shorter:
+
+- If `classes` is present and `signature` has only `returnType`, class signature auto-expansion is used by default.
+- In `signature.autoExpandClassSignature`, `className`, `thisRefName`, and `classHeapName` are optional when inferrable.
+- `classHeapName` default is derived from class name suffix (e.g. `DLNode -> nodeHeap`, `Point -> pointHeap`).
+- `fieldHeapNames` is optional (auto default: `<fieldName>Heap` for each `Ref[...]` field).
+- Use `signature.args` for method arguments that follow the auto-expanded class/heaps signature.
+- Mark non-changing method args with `immutable: true` in `signature.args`.
+- `signature.autoExpandClassSignature.additionalArgs` is removed; use `signature.args`.
+- The following helper components are implicitly available from the engine side (no JSON definition needed): `falseConst`, `trueConst`, `leInt`, `loadInt`.
+- For `oracle.kind = "js"`, if `oracle.args` is omitted and `autoExpandClassSignature` is used, argument names are auto-filled from resolved signature input names.
+
 ## Recursive Task Assumption (Decreasing Measure)
 
 For recursive synthesis, this project enforces a decreasing-measure check by default
