@@ -1,12 +1,13 @@
 # escher-ts
 
-TypeScript 実装のプログラム合成器です。  
-現在は **JSON で定義した合成タスク** を `TypedEscher` / `AscendRec` の両エンジンで実行できます。
+A TypeScript implementation of Escher, a Programming-by-Example synthesizer.
+You can run JSON-defined synthesis tasks with both `TypedEscher` and `AscendRec`.
 
-元リポジトリ（Scala 実装）:  
-https://github.com/MrVPlusOne/Escher-Scala
+- [Recursive Program Synthesis (CAV'13)](https://link.springer.com/chapter/10.1007/978-3-642-39799-8_67)
+- [Oracle-free Synthesis of Recursive Programs (BThesis'17)](https://github.com/MrVPlusOne/Escher-Scala/blob/master/documentation/AscendRec-en.pdf)
+  - [Escher-Scala (Scala implementation)](https://github.com/MrVPlusOne/Escher-Scala)
 
-## クイックスタート
+## Quick Start
 
 ```bash
 pnpm install
@@ -14,63 +15,63 @@ pnpm run typecheck
 pnpm test:run
 ```
 
-## Web アプリ (GitHub Pages 対応)
+## Web App (GitHub Pages-ready)
 
-`web/` 配下に、ブラウザで合成を実行できる UI を追加しています。
+`web/` contains a browser UI for running synthesis tasks.
 
 ```bash
-# 開発サーバ
+# Dev server
 pnpm run web:dev
 
-# 静的ビルド (web/dist)
+# Static build (web/dist)
 pnpm run web:build
 
-# ビルド確認
+# Preview build
 pnpm run web:preview
 ```
 
-機能:
+Features:
 
-- 個別ベンチマークを選択してその場で実行
-- `pure` / `classes` suite の一括実行
-- 実行結果のテーブル表示と SVG ランタイムグラフ表示
+- Run an individual benchmark interactively
+- Run full `pure` / `classes` suites
+- Show result tables and runtime SVG charts
 
-`web/vite.config.ts` は `base: "./"` を使っているため、`web/dist` をそのまま GitHub Pages に配置できます。
+`web/vite.config.ts` uses `base: "./"`, so `web/dist` can be published directly to GitHub Pages.
 
-### GitHub Pages 手動公開（自動デプロイなし）
+### Manual GitHub Pages Deployment (No Auto Deploy)
 
-1. GitHub 側設定
-   - Repository Settings → Pages → Source を `Deploy from a branch` にする
-   - Branch を `gh-pages` / `/ (root)` に設定
+1. Configure GitHub
+   - Repository Settings → Pages → Source: `Deploy from a branch`
+   - Branch: `gh-pages` / `/ (root)`
 
-2. 公開（1コマンド）
+2. Deploy (single command)
 
 ```bash
 pnpm run deploy:pages
 ```
 
-実行内容:
+What it runs:
 
 ```bash
 pnpm run build:pages
 pnpm dlx gh-pages -d web/dist
 ```
 
-公開 URL は通常 `https://<GitHubユーザー名>.github.io/<リポジトリ名>/` です。
+The published URL is usually `https://<your-github-user>.github.io/<repo-name>/`.
 
-## 実行コマンド
+## Benchmark Commands
 
 ```bash
-# Pure ベンチマーク
+# Pure benchmarks
 pnpm run benchmark:typed-escher -- --suite pure --maxCost 24 --timeoutMs 10000
 pnpm run benchmark:ascendrec -- --suite pure --maxCost 24 --timeoutMs 10000
 
-# Classes ベンチマーク
+# Classes benchmarks
 pnpm run benchmark:typed-escher -- --suite classes --maxCost 24 --timeoutMs 10000
 pnpm run benchmark:ascendrec -- --suite classes --maxCost 24 --timeoutMs 10000
 ```
 
-デフォルト出力:
+Default outputs:
 
 - `outputs/<suite>-typed-escher-runtime.svg`
 - `outputs/<suite>-typed-escher-runtime.csv`
@@ -79,31 +80,31 @@ pnpm run benchmark:ascendrec -- --suite classes --maxCost 24 --timeoutMs 10000
 - `outputs/<suite>-ascendrec-runtime.csv`
 - `outputs/<suite>-ascendrec-programs.md`
 
-## ディレクトリ構成
+## Directory Layout
 
-- `src/`: 合成器本体
-- `examples/`: JSON タスク定義とスイート定義
-- `tests/`: unit/integration テスト
-- `docs/`: 補足ドキュメント
-- `outputs/`: ベンチマーク実行結果（生成物）
+- `src/`: synthesizer implementation
+- `examples/`: JSON task definitions and suites
+- `tests/`: unit/integration tests
+- `docs/`: supplemental documentation
+- `outputs/`: benchmark results (generated files)
 
-詳細は `docs/directories.md` を参照してください。
+See `docs/directories.md` for details.
 
-## JSON タスク定義
+## JSON Task Definitions
 
-主な配置先:
+Primary locations:
 
 - `examples/benchmarks-pure/*.json`
 - `examples/benchmarks-classes/*.json`
-- `examples/basic/*.json`（小規模サンプル）
+- `examples/basic/*.json` (small examples)
 
-スイート定義:
+Suite definitions:
 
 - `examples/benchmark-suites/pure.json`
 - `examples/benchmark-suites/classes.json`
-- `examples/benchmark-suites/standard.json`（互換用の小スイート）
+- `examples/benchmark-suites/standard.json` (small compatibility suite)
 
-最小例:
+Minimal example:
 
 ```json
 {
@@ -124,23 +125,23 @@ pnpm run benchmark:ascendrec -- --suite classes --maxCost 24 --timeoutMs 10000
 }
 ```
 
-利用できる詳細仕様:
+More details:
 
-- コンポーネント定義: `docs/components.md`
-- テスト方針: `tests/README.md`
+- Component definitions: `docs/components.md`
+- Test strategy: `tests/README.md`
 
-## 新しいタスクを追加する
+## Adding a New Task
 
-1. `examples/benchmarks-pure/` または `examples/benchmarks-classes/` に JSON を追加
-2. `signature`, `components`, `examples` を定義
-3. 必要なら `oracle` を `examples` / `table` / `js` / `componentRef` で指定
-4. スイートに含める場合は `examples/benchmark-suites/*.json` を更新
-5. `pnpm test:run` と benchmark コマンドで確認
+1. Add a JSON file to `examples/benchmarks-pure/` or `examples/benchmarks-classes/`
+2. Define `signature`, `components`, and `examples`
+3. Optionally define `oracle` using `examples` / `table` / `js` / `componentRef`
+4. If needed, update `examples/benchmark-suites/*.json`
+5. Validate with `pnpm test:run` and benchmark commands
 
-## 新しいコンポーネントを追加する
+## Adding a New Component
 
-1. まず JSON の `intConst/intUnary/intBinary/boolUnary/libraryRef/js` で表現できるか確認
-2. TS 実装が必要なら `src/library/common-comps-*.ts` に追加
-3. `src/library/common-comps-sets.ts` に登録
-4. JSON から `libraryRef` で参照
-5. `tests/unit/library/common-comps.test.ts` にテストを追加
+1. First check whether JSON `intConst/intUnary/intBinary/boolUnary/libraryRef/js` is enough
+2. If TS implementation is needed, add it under `src/library/common-comps-*.ts`
+3. Register it in `src/library/common-comps-sets.ts`
+4. Reference it from JSON via `libraryRef`
+5. Add tests in `tests/unit/library/common-comps.test.ts`
