@@ -1,67 +1,87 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>escher-ts Web Runner</title>
-    <script type="module" crossorigin src="./assets/index-CDTSeKtx.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-0DP4cT01.css">
+    <script type="module" crossorigin src="./assets/index-xQbjVE8-.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Nk3HDCbi.css">
   </head>
   <body>
     <main class="app">
       <header class="hero">
         <h1>escher-ts Web Runner</h1>
-        <p>JSON ベンチマークをブラウザ上で実行して、結果を可視化します。</p>
       </header>
 
       <section class="panel">
-        <h2>共通設定</h2>
+        <h2>Shared Settings</h2>
         <div class="grid grid-4">
-          <label>
+          <label
+            class="has-tooltip"
+            data-tooltip="Global search bound used by both engines for level=1..maxCost. Too small can miss solutions; too large increases runtime."
+          >
             <span>maxCost</span>
             <input id="cfg-max-cost" type="number" min="1" value="24" />
           </label>
-          <label>
+          <label
+            class="has-tooltip"
+            data-tooltip="Per-task wall-clock deadline. In TypedEscher, reboot rounds share the same deadline and do not reset timeout."
+          >
             <span>timeoutMs</span>
             <input id="cfg-timeout-ms" type="number" min="1" value="10000" />
           </label>
-          <label>
+          <label
+            class="has-tooltip"
+            data-tooltip="Multiplier for conditional goal-search budget: searchSizeFactor x level. In AscendRec with onlyForwardSearch=true, this has little effect."
+          >
             <span>searchSizeFactor</span>
             <input id="cfg-search-size-factor" type="number" min="1" value="3" />
           </label>
-          <label>
+          <label
+            class="has-tooltip"
+            data-tooltip="TypedEscher only. Limits reboot retries after counterexample updates (unused by AscendRec)."
+          >
             <span>maxReboots (TypedEscher)</span>
             <input id="cfg-max-reboots" type="number" min="0" value="10" />
           </label>
         </div>
         <div class="grid grid-4">
-          <label>
+          <label
+            class="has-tooltip"
+            data-tooltip="then-first / cond-first. Changes conditional decomposition order. Usually affects runtime more than solvability."
+          >
             <span>strategy</span>
             <select id="cfg-strategy">
               <option value="then-first">then-first</option>
               <option value="cond-first">cond-first</option>
             </select>
           </label>
-          <label>
+          <label
+            class="has-tooltip"
+            data-tooltip="AscendRec only. Uses reduction rules (such as isReducible) to prune redundant terms. true is usually recommended."
+          >
             <span>useReductionRules (AscendRec)</span>
             <select id="cfg-use-reduction-rules">
               <option value="true">true</option>
               <option value="false">false</option>
             </select>
           </label>
-          <label>
+          <label
+            class="has-tooltip"
+            data-tooltip="AscendRec only. true disables backward/goal search and uses forward enumeration hits only."
+          >
             <span>onlyForwardSearch (AscendRec)</span>
             <select id="cfg-only-forward-search">
               <option value="false">false</option>
               <option value="true">true</option>
             </select>
           </label>
-          <div class="note">設定は単体実行 / suite 実行の両方に適用されます。</div>
+          <div class="note">These settings apply to both single-benchmark runs and suite runs.</div>
         </div>
       </section>
 
       <section class="panel">
-        <h2>単体ベンチマーク実行</h2>
+        <h2>Single Benchmark Run</h2>
         <div class="grid grid-3">
           <label>
             <span>Engine</span>
@@ -78,11 +98,24 @@
             <button id="run-single" type="button">Run Selected Benchmark</button>
           </div>
         </div>
-        <pre id="single-output" class="log"></pre>
+        <div class="grid grid-3 single-logs">
+          <section>
+            <h3>Engine Settings</h3>
+            <pre id="single-engine-settings" class="log"></pre>
+          </section>
+          <section>
+            <h3>Synthesis Task Settings</h3>
+            <pre id="single-task-settings" class="log"></pre>
+          </section>
+          <section>
+            <h3>Benchmark Result</h3>
+            <pre id="single-result" class="log"></pre>
+          </section>
+        </div>
       </section>
 
       <section class="panel">
-        <h2>Suite 実行 + グラフ</h2>
+        <h2>Suite Run + Chart</h2>
         <div class="grid grid-3">
           <label>
             <span>Engine</span>
@@ -95,7 +128,8 @@
             <span>Suite</span>
             <select id="suite-name">
               <option value="pure">pure</option>
-              <option value="classes">classes</option>
+              <option value="dllist">dllist</option>
+              <option value="points">points</option>
             </select>
           </label>
           <div class="actions">
@@ -103,8 +137,9 @@
           </div>
         </div>
         <pre id="suite-progress" class="log"></pre>
-        <div id="suite-table"></div>
         <div id="suite-chart" class="chart"></div>
+        <div id="suite-table"></div>
+        <div id="suite-components-table"></div>
       </section>
     </main>
 
